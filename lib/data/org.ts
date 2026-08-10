@@ -1,0 +1,107 @@
+import { createClient } from "@/lib/supabase/server";
+import { SectorKey } from "@/lib/labels/sectors";
+
+export interface OrgRow {
+  id: string;
+  name: string;
+  sector_type: SectorKey;
+  label_overrides: Record<string, string> | null;
+}
+
+/**
+ * Helper dipakai di semua Server Component halaman dashboard.
+ * Mengembalikan organisasi milik/tempat user yang sedang login bergabung,
+ * beserta instance Supabase client (server-side) yang sudah terikat sesi
+ * user tsb, supaya query-query berikutnya otomatis tunduk pada RLS.
+ *
+ * Urutan resolusi organisasi:
+ * 1. User adalah owner organisasi (kolom organizations.owner_id).
+ * 2. User sudah tercatat sebagai anggota (organization_members).
+ * 3. Ada undangan (invitations) yang cocok dengan email user ini —
+ *    jika ketemu, user OTOMATIS didaftarkan sebagai anggota (lihat
+ *    supabase/migrations/003_team_members.sql untuk RLS yang mengizinkan
+ *    user baru bergabung sendiri lewat undangan).
+ * 4. Tidak ketemu apapun -> return org: null (halaman pemanggil akan
+ *    redirect ke /onboarding).
+ */
+export async function getCurrentOrg() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { supabase, user: null, org: null as OrgRow | null };
+  }
+
+  // 1. Owner
+  const { data: ownedOrg } = await supabase
+    .from("organizations")
+    .select("id, name, sector_type, label_overrides")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (ownedOrg) {
+    return { supabase, user, org: ownedOrg as OrgRow };
+  }
+
+  // 2. Sudah jadi anggota organisasi lain
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (membership) {
+    const { data: memberOrg } = await supabase
+      .from("organizations")
+      .select("id, name, sector_type, label_overrides")
+      .eq("id", (membership as { organization_id: string }).organization_id)
+      .maybeSingle();
+    if (memberOrg) return { supabase, user, org: memberOrg as OrgRow };
+  }
+
+  // 3. Ada undangan yang cocok dengan email user ini -> auto-join
+  const email = user.email;
+  if (email) {
+    const { data: invite } = await supabase
+      .from("invitations")
+      .select("organization_id, role")
+      .eq("email", email)
+      .eq("accepted", false)
+      .maybeSingle();
+
+    if (invite) {
+      const inv = invite as { organization_id: string; role: string };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      await client.from("organization_members").insert([
+        {
+          organization_id: inv.organization_id,
+          user_id: user.id,
+          role: inv.role,
+          full_name:
+            (user.user_metadata?.full_name as string | undefined) ?? email.split("@")[0],
+        },
+      ]);
+      await client
+        .from("invitations")
+        .update({ accepted: true })
+        .eq("organization_id", inv.organization_id)
+        .eq("email", email);
+
+      const { data: joinedOrg } = await supabase
+        .from("organizations")
+        .select("id, name, sector_type, label_overrides")
+        .eq("id", inv.organization_id)
+        .maybeSingle();
+
+      if (joinedOrg) return { supabase, user, org: joinedOrg as OrgRow };
+    }
+  }
+
+  return { supabase, user, org: null as OrgRow | null };
+}
+

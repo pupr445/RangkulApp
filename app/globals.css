@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .flash {
+    animation: flashPulse 900ms ease;
+    border-radius: 4px;
+  }
+  @keyframes flashPulse {
+    0% {
+      background-color: rgba(232, 163, 61, 0.55);
+    }
+    100% {
+      background-color: rgba(232, 163, 61, 0);
+    }
+  }
+}
