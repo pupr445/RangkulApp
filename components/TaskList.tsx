@@ -9,6 +9,7 @@ import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
 import { createClient } from "@/lib/supabase/client";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
+import { TeamOption } from "@/lib/data/teams";
 
 const STATUS_LABEL: Record<FlatTask["status"], string> = {
   todo: "Belum Dikerjakan",
@@ -22,25 +23,29 @@ export function TaskList({
   isSample = false,
   members = [],
   customFields = [],
+  teams = [],
 }: {
   tasks: FlatTask[];
   organizationId?: string;
   isSample?: boolean;
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
+  teams?: TeamOption[];
 }) {
   const labels = useLabels();
   const router = useRouter();
   const supabase = createClient();
 
   const [filter, setFilter] = useState<"all" | FlatTask["status"]>("all");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
 
-  const filtered = useMemo(
-    () => (filter === "all" ? tasks : tasks.filter((t) => t.status === filter)),
-    [tasks, filter]
-  );
+  const filtered = useMemo(() => {
+    let list = filter === "all" ? tasks : tasks.filter((t) => t.status === filter);
+    if (teamFilter !== "all") list = list.filter((t) => t.teamId === teamFilter);
+    return list;
+  }, [tasks, filter, teamFilter]);
 
   const tabs: { key: "all" | FlatTask["status"]; label: string }[] = [
     { key: "all", label: "Semua" },
@@ -94,6 +99,24 @@ export function TaskList({
           );
         })}
       </div>
+
+      {teams.length > 0 && (
+        <div className="flex items-center gap-2 mb-5">
+          <label className="text-xs font-semibold text-inkMuted">Filter {labels.teamLabel}:</label>
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="text-sm border border-border rounded-lg px-2.5 py-1.5 bg-surface outline-none"
+          >
+            <option value="all">Semua {labels.teamLabelPlural}</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="bg-surface border border-border rounded-card overflow-hidden">
         {filtered.length === 0 && (
@@ -155,6 +178,7 @@ export function TaskList({
             organizationId={organizationId}
             members={members}
             customFields={customFields}
+            teams={teams}
           />
           <TaskDetailModal
             task={editingTask}
@@ -162,6 +186,7 @@ export function TaskList({
             organizationId={organizationId}
             members={members}
             customFields={customFields}
+            teams={teams}
           />
         </>
       )}

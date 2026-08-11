@@ -9,6 +9,7 @@ import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
 import { createClient } from "@/lib/supabase/client";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
+import { TeamOption } from "@/lib/data/teams";
 
 const STATUS_OPTIONS: { key: "todo" | "doing" | "done"; label: string }[] = [
   { key: "todo", label: "Belum Dikerjakan" },
@@ -24,6 +25,7 @@ export function Board({
   isSample = false,
   members = [],
   customFields = [],
+  teams = [],
 }: {
   title: string;
   subtitle: string;
@@ -32,6 +34,7 @@ export function Board({
   isSample?: boolean;
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
+  teams?: TeamOption[];
 }) {
   const labels = useLabels();
   const router = useRouter();
@@ -42,9 +45,15 @@ export function Board({
   const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string>("all");
 
   // Sinkron ulang saat props berubah (misalnya setelah router.refresh())
   useEffect(() => setCols(columns), [columns]);
+
+  const visibleCols =
+    teamFilter === "all"
+      ? cols
+      : cols.map((c) => ({ ...c, cards: c.cards.filter((card) => card.teamId === teamFilter) }));
 
   async function moveCard(cardId: string, fromColId: string, toColId: string) {
     if (isSample || !organizationId || fromColId === toColId) return;
@@ -101,8 +110,26 @@ export function Board({
         </p>
       )}
 
+      {teams.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <label className="text-xs font-semibold text-inkMuted">Filter {labels.teamLabel}:</label>
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="text-sm border border-border rounded-lg px-2.5 py-1.5 bg-surface outline-none"
+          >
+            <option value="all">Semua {labels.teamLabelPlural}</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cols.map((col) => (
+        {visibleCols.map((col) => (
           <div
             key={col.id}
             onDragOver={(e) => {
@@ -146,6 +173,7 @@ export function Board({
                     due: card.due,
                     status: col.id as "todo" | "doing" | "done",
                     assigneeId: card.assigneeId,
+                    teamId: card.teamId,
                     customData: card.customData,
                   });
                 }}
@@ -202,6 +230,7 @@ export function Board({
             organizationId={organizationId}
             members={members}
             customFields={customFields}
+            teams={teams}
           />
           <TaskDetailModal
             task={editingTask}
@@ -209,6 +238,7 @@ export function Board({
             organizationId={organizationId}
             members={members}
             customFields={customFields}
+            teams={teams}
           />
         </>
       )}

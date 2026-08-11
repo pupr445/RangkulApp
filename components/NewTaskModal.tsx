@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLabels } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
+import { TeamOption } from "@/lib/data/teams";
 
 export function NewTaskModal({
   open,
@@ -13,12 +14,14 @@ export function NewTaskModal({
   organizationId,
   members = [],
   customFields = [],
+  teams = [],
 }: {
   open: boolean;
   onClose: () => void;
   organizationId: string;
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
+  teams?: TeamOption[];
 }) {
   const labels = useLabels();
   const router = useRouter();
@@ -29,6 +32,7 @@ export function NewTaskModal({
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<"todo" | "doing" | "done">("todo");
   const [assigneeId, setAssigneeId] = useState("");
+  const [teamId, setTeamId] = useState("");
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +45,7 @@ export function NewTaskModal({
     setDueDate("");
     setStatus("todo");
     setAssigneeId("");
+    setTeamId("");
     setCustomValues({});
     setError(null);
     onClose();
@@ -59,6 +64,7 @@ export function NewTaskModal({
         due_date: dueDate || null,
         status,
         assignee_id: assigneeId || null,
+        team_id: teamId || null,
         custom_data: customValues,
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,6 +127,24 @@ export function NewTaskModal({
               />
             </div>
           </div>
+
+          {teams.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">{labels.teamLabel}</label>
+              <select
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+              >
+                <option value="">Belum ditentukan</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold mb-1.5">Ditugaskan ke</label>

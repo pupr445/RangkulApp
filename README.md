@@ -19,12 +19,20 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Assign tugas ke anggota tertentu** — dropdown "Ditugaskan ke" di form tugas
 - ✅ **Email undangan otomatis** (opsional, lewat Resend — lihat bagian 3 di bawah)
 - ✅ **Custom Field per Sektor** (`/dashboard/settings`) — admin bisa tambah kolom data sendiri (mis. "Nilai", "Nama Pasien") tanpa perlu ubah kode
+- ✅ **Struktur Tim Majemuk** — satu organisasi bisa punya banyak tim/kelas/poli, tugas bisa dikaitkan & difilter per tim
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 
 ## Yang BELUM ada (langkah lanjutan)
 
 - ❌ Kalender
+- ❌ Kontrol akses berjenjang sungguhan (role tersimpan di database, tapi belum membatasi hak akses)
+- ❌ Override manual istilah oleh admin (mesinnya sudah mendukung, UI belum ada)
+- ❌ Template preset otomatis per sektor saat onboarding (auto-buat tim)
+- ❌ Chat privat & per-tim (baru ada 1 chat umum se-organisasi), mention, read-by
+- ❌ Notifikasi push
+- ❌ Laporan kinerja per anggota + ekspor
+- ❌ Aktivitas tim harian (log)
 - ❌ Halaman billing/subscription (Midtrans/Xendit)
 - ❌ Aplikasi mobile
 
@@ -63,11 +71,12 @@ Buka [http://localhost:3000](http://localhost:3000).
 3. **Jalankan juga `supabase/migrations/002_chat_and_docs.sql`** — kolom untuk fitur Diskusi + bucket Storage untuk Dokumen.
 4. **Jalankan juga `supabase/migrations/003_team_members.sql`** — tabel `invitations` + izin auto-join untuk fitur Anggota Tim.
 5. **Jalankan juga `supabase/migrations/004_custom_field_values.sql`** — kolom penyimpanan nilai custom field di tabel tugas.
-6. (Opsional) jalankan `supabase/seed.sql` untuk data contoh struktur sektor.
-7. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-8. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
-9. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
-10. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
+6. **Jalankan juga `supabase/migrations/005_multi_team.sql`** — kolom `team_id` di tabel tugas untuk struktur tim majemuk.
+7. (Opsional) jalankan `supabase/seed.sql` untuk data contoh struktur sektor.
+8. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+9. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
+10. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
+11. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
     ```bash
     npx supabase gen types typescript --project-id <PROJECT_ID> > lib/types/database.ts
     ```

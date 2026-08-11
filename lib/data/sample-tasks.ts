@@ -7,6 +7,7 @@ export interface TaskCard {
   assignee: string;
   assigneeInitials: string;
   assigneeId?: string;
+  teamId?: string;
   due: string;
   customData?: Record<string, string>;
 }

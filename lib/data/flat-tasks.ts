@@ -9,6 +9,7 @@ export interface FlatTask {
   due: string;
   assignee: string;
   assigneeId?: string;
+  teamId?: string;
   customData?: Record<string, string>;
 }
 

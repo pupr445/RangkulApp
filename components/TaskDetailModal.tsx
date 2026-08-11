@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLabels } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
+import { TeamOption } from "@/lib/data/teams";
 
 export interface EditableTask {
   id: string;
@@ -14,6 +15,7 @@ export interface EditableTask {
   due: string; // "-" atau ISO date (yyyy-mm-dd)
   status: "todo" | "doing" | "done";
   assigneeId?: string;
+  teamId?: string;
   customData?: Record<string, string>;
 }
 
@@ -23,12 +25,14 @@ export function TaskDetailModal({
   organizationId,
   members = [],
   customFields = [],
+  teams = [],
 }: {
   task: EditableTask | null;
   onClose: () => void;
   organizationId: string;
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
+  teams?: TeamOption[];
 }) {
   const labels = useLabels();
   const router = useRouter();
@@ -39,6 +43,7 @@ export function TaskDetailModal({
   const [dueDate, setDueDate] = useState(task?.due && task.due !== "-" ? task.due : "");
   const [status, setStatus] = useState<"todo" | "doing" | "done">(task?.status ?? "todo");
   const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
+  const [teamId, setTeamId] = useState(task?.teamId ?? "");
   const [customValues, setCustomValues] = useState<Record<string, string>>(task?.customData ?? {});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -52,6 +57,7 @@ export function TaskDetailModal({
       setDueDate(task.due && task.due !== "-" ? task.due : "");
       setStatus(task.status);
       setAssigneeId(task.assigneeId ?? "");
+      setTeamId(task.teamId ?? "");
       setCustomValues(task.customData ?? {});
       setError(null);
     }
@@ -75,6 +81,7 @@ export function TaskDetailModal({
         due_date: dueDate || null,
         status,
         assignee_id: assigneeId || null,
+        team_id: teamId || null,
         custom_data: customValues,
       })
       .eq("id", task.id)
@@ -148,6 +155,24 @@ export function TaskDetailModal({
               />
             </div>
           </div>
+
+          {teams.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">{labels.teamLabel}</label>
+              <select
+                value={teamId}
+                onChange={(e) => setTeamId(e.target.value)}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+              >
+                <option value="">Belum ditentukan</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold mb-1.5">Ditugaskan ke</label>

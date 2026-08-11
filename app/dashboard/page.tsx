@@ -3,6 +3,7 @@ import { getLabels } from "@/lib/labels/sectors";
 import { sampleColumnsFor, BoardColumn } from "@/lib/data/sample-tasks";
 import { fetchMemberOptions, initialsFromName } from "@/lib/data/members";
 import { fetchTaskCustomFields } from "@/lib/data/custom-fields";
+import { fetchTeams } from "@/lib/data/teams";
 import { Board } from "@/components/Board";
 
 export const runtime = "edge";
@@ -32,11 +33,12 @@ export default async function DashboardPage() {
     : [];
   const memberMap = new Map(members.map((m) => [m.id, m.name]));
   const customFields = org ? await fetchTaskCustomFields(supabase, org.id) : [];
+  const teams = org ? await fetchTeams(supabase, org.id) : [];
 
   if (org) {
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, title, status, tag, due_date, assignee_id, custom_data")
+      .select("id, title, status, tag, due_date, assignee_id, team_id, custom_data")
       .eq("organization_id", org.id)
       .order("created_at", { ascending: false });
 
@@ -59,6 +61,7 @@ export default async function DashboardPage() {
           assignee: assigneeName,
           assigneeInitials: assigneeId ? initialsFromName(assigneeName) : "—",
           assigneeId,
+          teamId: (t.team_id as string | null) ?? undefined,
           due: (t.due_date as string) ?? "-",
           customData: (t.custom_data as Record<string, string> | null) ?? {},
         });
@@ -76,6 +79,7 @@ export default async function DashboardPage() {
       isSample={isSample}
       members={members}
       customFields={customFields}
+      teams={teams}
     />
   );
 }

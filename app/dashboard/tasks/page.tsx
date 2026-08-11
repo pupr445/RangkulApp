@@ -2,6 +2,7 @@ import { getCurrentOrg } from "@/lib/data/org";
 import { sampleFlatTasksFor, FlatTask } from "@/lib/data/flat-tasks";
 import { fetchMemberOptions, initialsFromName } from "@/lib/data/members";
 import { fetchTaskCustomFields } from "@/lib/data/custom-fields";
+import { fetchTeams } from "@/lib/data/teams";
 import { TaskList } from "@/components/TaskList";
 
 export const runtime = "edge";
@@ -26,11 +27,12 @@ export default async function TasksPage() {
     : [];
   const memberMap = new Map(members.map((m) => [m.id, m.name]));
   const customFields = org ? await fetchTaskCustomFields(supabase, org.id) : [];
+  const teams = org ? await fetchTeams(supabase, org.id) : [];
 
   if (org) {
     const { data } = await supabase
       .from("tasks")
-      .select("id, title, status, tag, due_date, assignee_id, custom_data")
+      .select("id, title, status, tag, due_date, assignee_id, team_id, custom_data")
       .eq("organization_id", org.id)
       .order("created_at", { ascending: false });
 
@@ -46,6 +48,7 @@ export default async function TasksPage() {
           due: (t.due_date as string) ?? "-",
           assignee: assigneeId ? memberMap.get(assigneeId) ?? "Anggota" : "Belum ditentukan",
           assigneeId,
+          teamId: (t.team_id as string | null) ?? undefined,
           customData: (t.custom_data as Record<string, string> | null) ?? {},
         };
       });
@@ -59,6 +62,7 @@ export default async function TasksPage() {
       isSample={isSample}
       members={members}
       customFields={customFields}
+      teams={teams}
     />
   );
 }

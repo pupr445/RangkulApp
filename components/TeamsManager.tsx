@@ -1,0 +1,107 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useLabels } from "@/lib/labels/LabelProvider";
+import { TeamOption } from "@/lib/data/teams";
+
+export function TeamsManager({
+  organizationId,
+  teams,
+}: {
+  organizationId: string;
+  teams: TeamOption[];
+}) {
+  const labels = useLabels();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleAdd() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    setError(null);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client = supabase as any;
+    const { error: insertError } = await client.from("teams").insert([
+      { organization_id: organizationId, name: trimmed },
+    ]);
+
+    setSaving(false);
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    setName("");
+    router.refresh();
+  }
+
+  async function handleDelete(id: string) {
+    if (
+      !confirm(
+        `Hapus ${labels.teamLabel} ini? Tugas yang sudah terkait tetap ada, tapi tidak lagi terhubung ke ${labels.teamLabel.toLowerCase()} ini.`
+      )
+    )
+      return;
+    await supabase.from("teams").delete().eq("id", id);
+    router.refresh();
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-card p-5 mb-6">
+      <h2 className="text-sm font-semibold mb-1">{labels.teamLabelPlural}</h2>
+      <p className="text-xs text-inkMuted mb-4">
+        Kelola daftar {labels.teamLabel.toLowerCase()} di organisasi kamu (mis. beberapa{" "}
+        {labels.teamLabel.toLowerCase()} sekaligus). Tugas bisa dikaitkan ke salah satunya, dan papan kerja bisa
+        difilter per {labels.teamLabel.toLowerCase()}.
+      </p>
+
+      {teams.length > 0 && (
+        <div className="border border-border rounded-lg overflow-hidden mb-4">
+          {teams.map((t, idx) => (
+            <div
+              key={t.id}
+              className={`flex items-center justify-between px-4 py-2.5 ${
+                idx !== teams.length - 1 ? "border-b border-border" : ""
+              }`}
+            >
+              <span className="text-sm font-medium">{t.name}</span>
+              <button
+                onClick={() => handleDelete(t.id)}
+                className="text-xs font-semibold text-[#8A3E24] hover:underline"
+              >
+                Hapus
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 flex-wrap">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={`Nama ${labels.teamLabel.toLowerCase()} baru, mis. ${
+            labels.teamLabel === "Kelas" ? "Kelas 8B" : labels.teamLabel === "Poli" ? "Poli Anak" : "Tim Baru"
+          }`}
+          className="flex-1 min-w-[180px] border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!name.trim() || saving}
+          className="text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-40 transition"
+          style={{ backgroundColor: labels.accent }}
+        >
+          {saving ? "Menambah…" : `+ Tambah ${labels.teamLabel}`}
+        </button>
+      </div>
+      {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
+    </div>
+  );
+}
