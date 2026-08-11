@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
 
 export interface MemberRow {
   id: string;
@@ -29,6 +29,7 @@ export function TeamManager({
   appOrigin: string;
 }) {
   const labels = useLabels();
+  const canManage = useCanManage();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -70,55 +71,60 @@ export function TeamManager({
     <main className="flex-1 p-6 md:p-8 min-w-0 max-w-2xl">
       <h1 className="text-2xl font-bold mb-1">Anggota Tim</h1>
       <p className="text-sm text-inkMuted mb-8">
-        Undang {labels.memberRole.toLowerCase()} atau {labels.managerRole.toLowerCase()} lain untuk bergabung ke{" "}
-        {ownerName ? `organisasi ${ownerName}` : "organisasi ini"}.
+        {canManage
+          ? `Undang ${labels.memberRole.toLowerCase()} atau ${labels.managerRole.toLowerCase()} lain untuk bergabung ke ${
+              ownerName ? `organisasi ${ownerName}` : "organisasi ini"
+            }.`
+          : `Daftar anggota di ${ownerName ? `organisasi ${ownerName}` : "organisasi ini"}.`}
       </p>
 
-      {/* Form undang */}
-      <div className="bg-surface border border-border rounded-card p-5 mb-6">
-        <h2 className="text-sm font-semibold mb-3">Undang Anggota Baru</h2>
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="nama@email.com"
-            className="flex-1 min-w-[200px] border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as "manager" | "member")}
-            className="border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
-          >
-            <option value="member">{labels.memberRole}</option>
-            <option value="manager">{labels.managerRole}</option>
-          </select>
-          <button
-            onClick={handleInvite}
-            disabled={!email.trim() || saving}
-            className="text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-40 transition"
-            style={{ backgroundColor: labels.accent }}
-          >
-            {saving ? "Mengundang…" : "Undang"}
-          </button>
-        </div>
-        {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
-        {lastResult && (
-          <p
-            className="text-xs mt-2 font-medium"
-            style={{ color: lastResult.emailSent ? "#2F9E7A" : "#B8862F" }}
-          >
-            {lastResult.emailSent
-              ? `✓ Email undangan terkirim ke ${lastResult.email}.`
-              : `Undangan tersimpan, tapi email otomatis belum aktif — kabari ${lastResult.email} secara manual untuk login di ${appOrigin} memakai email ini.`}
+      {/* Form undang — hanya untuk Owner/Manager */}
+      {canManage && (
+        <div className="bg-surface border border-border rounded-card p-5 mb-6">
+          <h2 className="text-sm font-semibold mb-3">Undang Anggota Baru</h2>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nama@email.com"
+              className="flex-1 min-w-[200px] border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+            />
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as "manager" | "member")}
+              className="border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+            >
+              <option value="member">{labels.memberRole}</option>
+              <option value="manager">{labels.managerRole}</option>
+            </select>
+            <button
+              onClick={handleInvite}
+              disabled={!email.trim() || saving}
+              className="text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-40 transition"
+              style={{ backgroundColor: labels.accent }}
+            >
+              {saving ? "Mengundang…" : "Undang"}
+            </button>
+          </div>
+          {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
+          {lastResult && (
+            <p
+              className="text-xs mt-2 font-medium"
+              style={{ color: lastResult.emailSent ? "#2F9E7A" : "#B8862F" }}
+            >
+              {lastResult.emailSent
+                ? `✓ Email undangan terkirim ke ${lastResult.email}.`
+                : `Undangan tersimpan, tapi email otomatis belum aktif — kabari ${lastResult.email} secara manual untuk login di ${appOrigin} memakai email ini.`}
+            </p>
+          )}
+          <p className="text-xs text-inkMuted mt-3">
+            {lastResult
+              ? "Setelah orang tsb login Google memakai email yang sama, mereka otomatis bergabung."
+              : "Email undangan dikirim otomatis lewat Resend jika sudah dikonfigurasi (lihat README) — kalau belum, kamu perlu kabari orangnya secara manual."}
           </p>
-        )}
-        <p className="text-xs text-inkMuted mt-3">
-          {lastResult
-            ? "Setelah orang tsb login Google memakai email yang sama, mereka otomatis bergabung."
-            : "Email undangan dikirim otomatis lewat Resend jika sudah dikonfigurasi (lihat README) — kalau belum, kamu perlu kabari orangnya secara manual."}
-        </p>
-      </div>
+        </div>
+      )}
 
       {/* Anggota aktif */}
       <div className="bg-surface border border-border rounded-card overflow-hidden mb-6">
@@ -141,8 +147,8 @@ export function TeamManager({
         ))}
       </div>
 
-      {/* Undangan tertunda */}
-      {pendingInvites.length > 0 && (
+      {/* Undangan tertunda — hanya terlihat oleh Owner/Manager */}
+      {canManage && pendingInvites.length > 0 && (
         <div className="bg-surface border border-border rounded-card overflow-hidden">
           <h2 className="text-sm font-semibold px-5 pt-4 pb-2">Menunggu Bergabung ({pendingInvites.length})</h2>
           {pendingInvites.map((inv, idx) => (

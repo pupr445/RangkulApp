@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
 
 const ICONS = {
   team: "📋",
@@ -16,6 +16,7 @@ const ICONS = {
 
 export function Sidebar() {
   const labels = useLabels();
+  const canManage = useCanManage();
   const pathname = usePathname();
 
   const items = [
@@ -25,7 +26,10 @@ export function Sidebar() {
     { icon: ICONS.report, text: labels.navReport, href: "/dashboard/reports" },
     { icon: ICONS.docs, text: labels.navDocs, href: "/dashboard/docs" },
     { icon: ICONS.members, text: "Anggota Tim", href: "/dashboard/team" },
-    { icon: ICONS.settings, text: "Pengaturan", href: "/dashboard/settings" },
+    // Pengaturan hanya untuk Owner/Manager — Member biasa tidak boleh
+    // ubah nama organisasi, sektor, tim, atau custom field (lihat RLS
+    // di migration 006_role_based_access.sql).
+    ...(canManage ? [{ icon: ICONS.settings, text: "Pengaturan", href: "/dashboard/settings" }] : []),
   ];
 
   return (

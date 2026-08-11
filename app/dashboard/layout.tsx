@@ -5,7 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, org } = await getCurrentOrg();
+  const { user, org, role } = await getCurrentOrg();
 
   if (!user) {
     redirect("/login");
@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     "Pengguna";
 
   return (
-    <LabelProvider sector={org.sector_type} overrides={org.label_overrides}>
+    <LabelProvider sector={org.sector_type} overrides={org.label_overrides} role={role} userId={user.id}>
       <div className="min-h-screen flex flex-col">
         <TopBar userName={displayName} />
         <div className="flex flex-1">

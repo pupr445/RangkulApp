@@ -9,10 +9,16 @@ import { TeamsManager } from "@/components/TeamsManager";
 export const runtime = "edge";
 
 export default async function SettingsPage() {
-  const { supabase, user, org } = await getCurrentOrg();
+  const { supabase, user, org, role } = await getCurrentOrg();
 
   if (!user || !org) {
     redirect("/login");
+  }
+
+  // Member biasa tidak boleh mengubah pengaturan organisasi — dialihkan
+  // ke dashboard. (Ini pelengkap UX; keamanan sesungguhnya ada di RLS.)
+  if (role === "member") {
+    redirect("/dashboard");
   }
 
   const customFields = await fetchTaskCustomFields(supabase, org.id);

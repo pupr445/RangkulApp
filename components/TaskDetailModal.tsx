@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
@@ -35,6 +35,8 @@ export function TaskDetailModal({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
+  const canManage = useCanManage();
+  const currentUserId = useCurrentUserId();
   const router = useRouter();
   const supabase = createClient();
 
@@ -65,6 +67,8 @@ export function TaskDetailModal({
   }, [task?.id]);
 
   if (!task) return null;
+
+  const canDelete = canManage || task.assigneeId === currentUserId;
 
   async function handleSave() {
     if (!title.trim() || !task) return;
@@ -239,16 +243,25 @@ export function TaskDetailModal({
           )}
 
           {error && <p className="text-xs text-[#8A3E24]">{error}</p>}
+          {!canDelete && (
+            <p className="text-xs text-inkMuted">
+              {labels.taskLabel} ini ditugaskan ke orang lain — kamu hanya bisa melihat, tidak bisa mengubah.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between items-center gap-2 mt-6">
-          <button
-            onClick={handleDelete}
-            disabled={deleting || saving}
-            className="text-sm font-semibold px-4 py-2 rounded-lg text-[#8A3E24] hover:bg-[#FBEAE5] disabled:opacity-40 transition"
-          >
-            {deleting ? "Menghapus…" : "Hapus"}
-          </button>
+          {canDelete ? (
+            <button
+              onClick={handleDelete}
+              disabled={deleting || saving}
+              className="text-sm font-semibold px-4 py-2 rounded-lg text-[#8A3E24] hover:bg-[#FBEAE5] disabled:opacity-40 transition"
+            >
+              {deleting ? "Menghapus…" : "Hapus"}
+            </button>
+          ) : (
+            <span />
+          )}
           <div className="flex gap-2">
             <button
               onClick={onClose}
@@ -258,7 +271,7 @@ export function TaskDetailModal({
             </button>
             <button
               onClick={handleSave}
-              disabled={!title.trim() || saving || deleting}
+              disabled={!title.trim() || saving || deleting || !canDelete}
               className="text-sm font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-40 transition"
               style={{ backgroundColor: labels.accent }}
             >
