@@ -14,6 +14,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Diskusi** (`/dashboard/chat`) — chat real-time via Supabase Realtime, **plus Chat Privat (DM)**, **@mention**, dan indikator "sudah dibaca" untuk DM
 - ✅ **Rapor Kinerja** (`/dashboard/reports`) — agregasi status tugas, **breakdown per anggota**, dan **ekspor CSV**
 - ✅ **Dokumen** (`/dashboard/docs`) — upload & unduh file sungguhan via Supabase Storage
+- ✅ **Kalender** (`/dashboard/calendar`) — tampilan bulanan tugas berdasarkan tenggat (`due_date`), klik tanggal untuk lihat daftar tugasnya, klik tugas untuk edit
 - ✅ **Edit & hapus tugas**, ubah status lewat drag & drop maupun dropdown cepat
 - ✅ **Anggota Tim** (`/dashboard/team`) — undang anggota lewat email, auto-join saat mereka login dengan email yang diundang
 - ✅ **Assign tugas ke anggota tertentu** — dropdown "Ditugaskan ke" di form tugas
@@ -28,8 +29,6 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 
 ## Yang BELUM ada (langkah lanjutan)
 
-- ❌ Kalender
-- ❌ Template preset otomatis per sektor saat onboarding (auto-buat tim)
 - ❌ Chat per-tim (masih 1 Diskusi Tim umum se-organisasi; Chat Privat 1-on-1 sudah ada)
 - ❌ Notifikasi push
 - ❌ Aktivitas tim harian (log)

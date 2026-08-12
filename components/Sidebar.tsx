@@ -8,6 +8,7 @@ const ICONS = {
   team: "📋",
   members: "👥",
   task: "✅",
+  calendar: "🗓️",
   chat: "💬",
   report: "📊",
   docs: "📁",
@@ -22,6 +23,7 @@ export function Sidebar() {
   const items = [
     { icon: ICONS.team, text: labels.navTeam, href: "/dashboard" },
     { icon: ICONS.task, text: labels.navTask, href: "/dashboard/tasks" },
+    { icon: ICONS.calendar, text: "Kalender", href: "/dashboard/calendar" },
     { icon: ICONS.chat, text: labels.navChat, href: "/dashboard/chat" },
     { icon: ICONS.report, text: labels.navReport, href: "/dashboard/reports" },
     { icon: ICONS.docs, text: labels.navDocs, href: "/dashboard/docs" },
