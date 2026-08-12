@@ -12,7 +12,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Dashboard / Kanban Board** — terhubung ke tabel `tasks`, fallback ke data contoh jika kosong
 - ✅ **Semua Tugas/PR** (`/dashboard/tasks`) — daftar tugas lintas tim dengan filter status
 - ✅ **Diskusi** (`/dashboard/chat`) — chat real-time via Supabase Realtime, **plus Chat Privat (DM)**, **@mention**, dan indikator "sudah dibaca" untuk DM
-- ✅ **Rapor Kinerja** (`/dashboard/reports`) — agregasi status tugas & tingkat penyelesaian
+- ✅ **Rapor Kinerja** (`/dashboard/reports`) — agregasi status tugas, **breakdown per anggota**, dan **ekspor CSV**
 - ✅ **Dokumen** (`/dashboard/docs`) — upload & unduh file sungguhan via Supabase Storage
 - ✅ **Edit & hapus tugas**, ubah status lewat drag & drop maupun dropdown cepat
 - ✅ **Anggota Tim** (`/dashboard/team`) — undang anggota lewat email, auto-join saat mereka login dengan email yang diundang
@@ -32,7 +32,6 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ❌ Template preset otomatis per sektor saat onboarding (auto-buat tim)
 - ❌ Chat per-tim (masih 1 Diskusi Tim umum se-organisasi; Chat Privat 1-on-1 sudah ada)
 - ❌ Notifikasi push
-- ❌ Laporan kinerja per anggota + ekspor
 - ❌ Aktivitas tim harian (log)
 - ❌ Halaman billing/subscription (Midtrans/Xendit)
 - ❌ Aplikasi mobile
