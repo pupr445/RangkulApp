@@ -11,7 +11,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ Wizard onboarding untuk memilih sektor organisasi
 - ✅ **Dashboard / Kanban Board** — terhubung ke tabel `tasks`, fallback ke data contoh jika kosong
 - ✅ **Semua Tugas/PR** (`/dashboard/tasks`) — daftar tugas lintas tim dengan filter status
-- ✅ **Diskusi** (`/dashboard/chat`) — chat real-time sungguhan via Supabase Realtime (bukan simulasi)
+- ✅ **Diskusi** (`/dashboard/chat`) — chat real-time via Supabase Realtime, **plus Chat Privat (DM)**, **@mention**, dan indikator "sudah dibaca" untuk DM
 - ✅ **Rapor Kinerja** (`/dashboard/reports`) — agregasi status tugas & tingkat penyelesaian
 - ✅ **Dokumen** (`/dashboard/docs`) — upload & unduh file sungguhan via Supabase Storage
 - ✅ **Edit & hapus tugas**, ubah status lewat drag & drop maupun dropdown cepat
@@ -30,7 +30,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 
 - ❌ Kalender
 - ❌ Template preset otomatis per sektor saat onboarding (auto-buat tim)
-- ❌ Chat privat & per-tim (baru ada 1 chat umum se-organisasi), mention, read-by
+- ❌ Chat per-tim (masih 1 Diskusi Tim umum se-organisasi; Chat Privat 1-on-1 sudah ada)
 - ❌ Notifikasi push
 - ❌ Laporan kinerja per anggota + ekspor
 - ❌ Aktivitas tim harian (log)
@@ -75,12 +75,13 @@ Buka [http://localhost:3000](http://localhost:3000).
 6. **Jalankan juga `supabase/migrations/005_multi_team.sql`** — kolom `team_id` di tabel tugas untuk struktur tim majemuk.
 7. **Jalankan juga `supabase/migrations/006_role_based_access.sql`** — kebijakan RLS yang menegakkan hak akses Owner/Manager/Member.
 8. **Jalankan juga `supabase/migrations/007_unique_owner.sql`** — mengunci satu akun hanya boleh punya 1 organisasi (cek dulu tidak ada duplikat sebelum menjalankan ini, lihat komentar di file SQL-nya).
-9. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru (sekolah/klinik/bisnis). Tanpa ini, onboarding tetap jalan normal, cuma tidak ada tim yang otomatis dibuat.
-10. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-11. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
-12. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
-13. **Salin juga `service_role key`** (di halaman yang sama, di bawah anon key) ke `SUPABASE_SERVICE_ROLE_KEY` di `.env.local` — **wajib**, lihat catatan di bawah.
-14. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
+9. **Jalankan juga `supabase/migrations/008_private_chat_mentions.sql`** — kolom & tabel untuk Chat Privat (DM) dan status "sudah dibaca".
+10. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru (sekolah/klinik/bisnis). Tanpa ini, onboarding tetap jalan normal, cuma tidak ada tim yang otomatis dibuat.
+11. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+12. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
+13. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
+14. **Salin juga `service_role key`** (di halaman yang sama, di bawah anon key) ke `SUPABASE_SERVICE_ROLE_KEY` di `.env.local` — **wajib**, lihat catatan di bawah.
+15. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
     ```bash
     npx supabase gen types typescript --project-id <PROJECT_ID> > lib/types/database.ts
     ```

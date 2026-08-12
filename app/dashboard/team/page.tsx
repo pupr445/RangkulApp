@@ -14,7 +14,7 @@ export default async function TeamPage() {
 
   const { data: membersData } = await supabase
     .from("organization_members")
-    .select("id, full_name, role")
+    .select("id:user_id, full_name, role")
     .eq("organization_id", org.id);
 
   const { data: invitesData } = await supabase
@@ -48,6 +48,7 @@ export default async function TeamPage() {
       members={members}
       pendingInvites={pendingInvites}
       appOrigin={appOrigin}
+      currentUserId={user.id}
     />
   );
 }

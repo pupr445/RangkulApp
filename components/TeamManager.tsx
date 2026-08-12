@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
 
 export interface MemberRow {
@@ -21,12 +22,14 @@ export function TeamManager({
   members,
   pendingInvites,
   appOrigin,
+  currentUserId,
 }: {
   organizationId: string;
   ownerName: string;
   members: MemberRow[];
   pendingInvites: InviteRow[];
   appOrigin: string;
+  currentUserId: string;
 }) {
   const labels = useLabels();
   const canManage = useCanManage();
@@ -137,12 +140,23 @@ export function TeamManager({
             }`}
           >
             <span className="text-sm font-medium">{m.full_name ?? "Tanpa nama"}</span>
-            <span
-              className="text-xs font-semibold px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: labels.accentSoft, color: labels.accent }}
-            >
-              {roleLabel(m.role)}
-            </span>
+            <div className="flex items-center gap-2">
+              {m.id !== currentUserId && (
+                <Link
+                  href={`/dashboard/chat?with=${m.id}`}
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: labels.accent }}
+                >
+                  💬 Chat
+                </Link>
+              )}
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: labels.accentSoft, color: labels.accent }}
+              >
+                {roleLabel(m.role)}
+              </span>
+            </div>
           </div>
         ))}
       </div>
