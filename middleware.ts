@@ -1,7 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/onboarding", "/auth/callback"];
+// "/onboarding" SENGAJA TIDAK dimasukkan ke sini — halaman itu membuat
+// data terkait user yang login (organisasi baru dengan owner_id-nya),
+// jadi wajib sudah login. Kalau tidak, middleware di bawah akan
+// mengalihkan ke /login terlebih dahulu.
+const PUBLIC_PATHS = ["/login", "/auth/callback"];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 export async function middleware(request: NextRequest) {

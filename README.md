@@ -22,6 +22,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Struktur Tim Majemuk** — satu organisasi bisa punya banyak tim/kelas/poli, tugas bisa dikaitkan & difilter per tim
 - ✅ **Kontrol Akses Berjenjang** — Owner/Manager bisa kelola tim/field/undangan, Member biasa cuma bisa ubah tugas miliknya sendiri (ditegakkan lewat RLS database, bukan cuma UI)
 - ✅ **Override Manual Istilah** — Owner bisa ganti istilah tertentu manual (mis. "Guru" → "Wali Kelas") tanpa perlu ubah kode, di luar template sektor default
+- ✅ **Template Preset per Sektor** — saat onboarding, kalau sektor punya template siap pakai (lihat `supabase/seed.sql`), tim-tim defaultnya otomatis dibuat (mis. sekolah langsung dapat Kelas 7A/8A/9A)
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 
@@ -73,14 +74,19 @@ Buka [http://localhost:3000](http://localhost:3000).
 5. **Jalankan juga `supabase/migrations/004_custom_field_values.sql`** — kolom penyimpanan nilai custom field di tabel tugas.
 6. **Jalankan juga `supabase/migrations/005_multi_team.sql`** — kolom `team_id` di tabel tugas untuk struktur tim majemuk.
 7. **Jalankan juga `supabase/migrations/006_role_based_access.sql`** — kebijakan RLS yang menegakkan hak akses Owner/Manager/Member.
-8. (Opsional) jalankan `supabase/seed.sql` untuk data contoh struktur sektor.
-9. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-10. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
-11. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
-12. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
+8. **Jalankan juga `supabase/migrations/007_unique_owner.sql`** — mengunci satu akun hanya boleh punya 1 organisasi (cek dulu tidak ada duplikat sebelum menjalankan ini, lihat komentar di file SQL-nya).
+9. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru (sekolah/klinik/bisnis). Tanpa ini, onboarding tetap jalan normal, cuma tidak ada tim yang otomatis dibuat.
+10. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+11. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
+12. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.
+13. **Salin juga `service_role key`** (di halaman yang sama, di bawah anon key) ke `SUPABASE_SERVICE_ROLE_KEY` di `.env.local` — **wajib**, lihat catatan di bawah.
+14. (Opsional, setelah skema stabil) generate tipe TypeScript otomatis:
     ```bash
     npx supabase gen types typescript --project-id <PROJECT_ID> > lib/types/database.ts
     ```
+
+> **Kenapa perlu service_role key untuk sesuatu sesederhana "buat organisasi"?**
+> Awalnya pembuatan organisasi memang cukup lewat insert langsung dari browser (memakai RLS biasa, seperti fitur lain di aplikasi ini). Tapi di lapangan ditemukan kasus di mana layanan PostgREST sebuah project Supabase gagal meneruskan konteks otentikasi dengan benar ke RLS untuk operasi INSERT tertentu — meski JWT valid, kebijakan RLS benar, dan `auth.uid()` terbukti bekerja normal saat disimulasikan langsung di database (bukan lewat API). Ini kemungkinan bug/anomali spesifik pada instance PostgREST tertentu, bukan kesalahan konfigurasi. Karena user aplikasi pada umumnya tidak seharusnya terhambat oleh masalah infrastruktur semacam ini, `/api/create-organization` dipindah ke server memakai service role key (yang melewati RLS sepenuhnya) — lebih andal, dan tetap aman karena `owner_id` diambil dari sesi login yang sudah diverifikasi server, bukan dari input yang bisa dipalsukan.
 
 ---
 
@@ -129,7 +135,9 @@ git push -u origin main
 3. Framework preset: pilih **Next.js**.
 4. Build command: `npx @cloudflare/next-on-pages@1`
    Build output directory: `.vercel/output/static`
-5. Di **Environment variables**, tambahkan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` (nilai sama seperti di `.env.local`). Tambahkan juga `RESEND_API_KEY` dan `RESEND_FROM_EMAIL` kalau sudah pakai fitur email.
+5. Di **Environment variables**, tambahkan `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, dan **`SUPABASE_SERVICE_ROLE_KEY`** (nilai sama seperti di `.env.local` — yang terakhir **wajib**, bukan opsional, dipakai `/api/create-organization`). Tambahkan juga `RESEND_API_KEY` dan `RESEND_FROM_EMAIL` kalau sudah pakai fitur email.
+
+   > ⚠️ **Jangan pernah** taruh `SUPABASE_SERVICE_ROLE_KEY` di file `.env.production` (kalau kamu sempat membuat file itu untuk mengatasi masalah build sebelumnya) — file itu ikut ter-commit ke Git, sementara service role key bersifat rahasia (melewati semua RLS). Isi env var ini **hanya** lewat form "Environment variables" di dashboard Cloudflare Pages, bukan lewat file yang di-commit.
 6. Klik **Save and Deploy**. Setelah selesai, kamu akan dapat URL gratis seperti `rangkul-starter.pages.dev` — ini sudah bisa dipakai, tidak perlu beli domain.
 
 ### Langkah C — Update Supabase & Google OAuth (WAJIB, sering terlewat)
@@ -145,6 +153,7 @@ File `.github/workflows/deploy.yml` sudah dikonfigurasi supaya deploy otomatis t
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project Settings > API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Project Settings > API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Project Settings > API (wajib, jangan sampai bocor) |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare Dashboard > My Profile > API Tokens (buat token dengan permission "Cloudflare Pages: Edit") |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Dashboard, ada di sidebar kanan halaman overview |
 
