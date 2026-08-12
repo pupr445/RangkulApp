@@ -21,13 +21,13 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Custom Field per Sektor** (`/dashboard/settings`) — admin bisa tambah kolom data sendiri (mis. "Nilai", "Nama Pasien") tanpa perlu ubah kode
 - ✅ **Struktur Tim Majemuk** — satu organisasi bisa punya banyak tim/kelas/poli, tugas bisa dikaitkan & difilter per tim
 - ✅ **Kontrol Akses Berjenjang** — Owner/Manager bisa kelola tim/field/undangan, Member biasa cuma bisa ubah tugas miliknya sendiri (ditegakkan lewat RLS database, bukan cuma UI)
+- ✅ **Override Manual Istilah** — Owner bisa ganti istilah tertentu manual (mis. "Guru" → "Wali Kelas") tanpa perlu ubah kode, di luar template sektor default
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 
 ## Yang BELUM ada (langkah lanjutan)
 
 - ❌ Kalender
-- ❌ Override manual istilah oleh admin (mesinnya sudah mendukung, UI belum ada)
 - ❌ Template preset otomatis per sektor saat onboarding (auto-buat tim)
 - ❌ Chat privat & per-tim (baru ada 1 chat umum se-organisasi), mention, read-by
 - ❌ Notifikasi push
