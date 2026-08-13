@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentOrg } from "@/lib/data/org";
 import { fetchTaskCustomFields } from "@/lib/data/custom-fields";
 import { fetchTeams } from "@/lib/data/teams";
+import { fetchMemberOptions } from "@/lib/data/members";
+import { fetchTeamMembersByOrg } from "@/lib/data/team-members";
 import { SettingsForm } from "@/components/SettingsForm";
 import { CustomFieldsManager } from "@/components/CustomFieldsManager";
 import { TeamsManager } from "@/components/TeamsManager";
@@ -24,6 +26,11 @@ export default async function SettingsPage() {
 
   const customFields = await fetchTaskCustomFields(supabase, org.id);
   const teams = await fetchTeams(supabase, org.id);
+  const orgMembers = await fetchMemberOptions(supabase, org.id, {
+    id: user.id,
+    name: (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "Saya",
+  });
+  const teamMembersMap = await fetchTeamMembersByOrg(supabase, org.id);
 
   return (
     <main className="flex-1 p-6 md:p-8 min-w-0 max-w-2xl">
@@ -45,7 +52,7 @@ export default async function SettingsPage() {
           </p>
         </div>
       )}
-      <TeamsManager organizationId={org.id} teams={teams} />
+      <TeamsManager organizationId={org.id} teams={teams} orgMembers={orgMembers} teamMembersMap={teamMembersMap} />
       <CustomFieldsManager organizationId={org.id} fields={customFields} />
     </main>
   );
