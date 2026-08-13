@@ -11,6 +11,7 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [previewTeams, setPreviewTeams] = useState<string[]>([]);
+  const [previewFields, setPreviewFields] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -53,6 +54,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!selected) {
       setPreviewTeams([]);
+      setPreviewFields([]);
       return;
     }
     let cancelled = false;
@@ -64,10 +66,22 @@ export default function OnboardingPage() {
       .eq("sector_type", selected)
       .limit(1)
       .maybeSingle()
-      .then(({ data }: { data: { default_structure?: { teams?: string[] } } | null }) => {
-        if (cancelled) return;
-        setPreviewTeams(data?.default_structure?.teams ?? []);
-      });
+      .then(
+        ({
+          data,
+        }: {
+          data: {
+            default_structure?: {
+              teams?: string[];
+              custom_fields?: Array<{ field_label: string }>;
+            };
+          } | null;
+        }) => {
+          if (cancelled) return;
+          setPreviewTeams(data?.default_structure?.teams ?? []);
+          setPreviewFields((data?.default_structure?.custom_fields ?? []).map((f) => f.field_label));
+        }
+      );
     return () => {
       cancelled = true;
     };
@@ -176,6 +190,23 @@ export default function OnboardingPage() {
                   </span>
                 ))}
               </div>
+              {previewFields.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold mb-2 mt-3">
+                    Field data siap pakai untuk {SECTOR_LABELS[selected].taskLabel.toLowerCase()}:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {previewFields.map((f) => (
+                      <span
+                        key={f}
+                        className="text-xs px-2.5 py-1 rounded-full border border-border text-inkMuted"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
               <p className="text-[11px] text-inkMuted mt-2">
                 Bisa diubah atau ditambah kapan pun dari Pengaturan setelah ini.
               </p>

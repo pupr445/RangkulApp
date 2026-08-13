@@ -23,7 +23,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Struktur Tim Majemuk** — satu organisasi bisa punya banyak tim/kelas/poli, tugas bisa dikaitkan & difilter per tim
 - ✅ **Kontrol Akses Berjenjang** — Owner/Manager bisa kelola tim/field/undangan, Member biasa cuma bisa ubah tugas miliknya sendiri (ditegakkan lewat RLS database, bukan cuma UI)
 - ✅ **Override Manual Istilah** — Owner bisa ganti istilah tertentu manual (mis. "Guru" → "Wali Kelas") tanpa perlu ubah kode, di luar template sektor default
-- ✅ **Template Preset per Sektor** — saat onboarding, kalau sektor punya template siap pakai (lihat `supabase/seed.sql`), tim-tim defaultnya otomatis dibuat (mis. sekolah langsung dapat Kelas 7A/8A/9A)
+- ✅ **Template Preset per Sektor** — saat onboarding, semua 6 sektor kini punya template siap pakai (`supabase/seed.sql`): tim default OTOMATIS DIBUAT (mis. sekolah langsung dapat Kelas 7A/8A/9A) **dan** field data relevan langsung tersedia lewat Custom Field Builder (mis. klinik langsung dapat field "Nama Pasien" wajib diisi + "Jenis Tindakan" dropdown) — sebelumnya cuma 3 dari 6 sektor yang punya template, dan template lama cuma nama tim tanpa field
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 
@@ -74,7 +74,7 @@ Buka [http://localhost:3000](http://localhost:3000).
 7. **Jalankan juga `supabase/migrations/006_role_based_access.sql`** — kebijakan RLS yang menegakkan hak akses Owner/Manager/Member.
 8. **Jalankan juga `supabase/migrations/007_unique_owner.sql`** — mengunci satu akun hanya boleh punya 1 organisasi (cek dulu tidak ada duplikat sebelum menjalankan ini, lihat komentar di file SQL-nya).
 9. **Jalankan juga `supabase/migrations/008_private_chat_mentions.sql`** — kolom & tabel untuk Chat Privat (DM) dan status "sudah dibaca".
-10. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru (sekolah/klinik/bisnis). Tanpa ini, onboarding tetap jalan normal, cuma tidak ada tim yang otomatis dibuat.
+10. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru, untuk SEMUA sektor (sekolah/klinik/bisnis/masjid/komunitas/lainnya). **Butuh migration `009_custom_field_builder.sql` sudah jalan lebih dulu**, karena seed ini juga mengisi custom_fields default. Tanpa seed ini, onboarding tetap jalan normal, cuma tidak ada tim/field yang otomatis dibuat. Catatan: seed ini menghapus lalu menulis ulang seluruh isi tabel `sector_templates` — jangan jalankan kalau kamu sudah mengedit baris template itu secara manual dan ingin mempertahankannya.
 11. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 12. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
 13. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.

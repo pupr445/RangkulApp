@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { slugifyFieldKey } from "@/lib/data/custom-fields";
 
 export const runtime = "edge";
 
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Template Preset per Sektor: buatkan tim default kalau tersedia.
+  // Template Preset per Sektor: buatkan tim & field data default kalau tersedia.
   const { data: template } = await admin
     .from("sector_templates")
     .select("default_structure")
@@ -81,13 +82,39 @@ export async function POST(request: Request) {
     .limit(1)
     .maybeSingle();
 
-  const structure = template?.default_structure as { teams?: string[] } | null | undefined;
-  const teamNames = structure?.teams ?? [];
+  const structure = template?.default_structure as
+    | {
+        teams?: string[];
+        custom_fields?: Array<{
+          field_label: string;
+          field_type: "text" | "number" | "date" | "select";
+          field_options?: string[];
+          is_required?: boolean;
+        }>;
+      }
+    | null
+    | undefined;
 
+  const teamNames = structure?.teams ?? [];
   if (teamNames.length > 0) {
     await admin
       .from("teams")
       .insert(teamNames.map((teamName) => ({ organization_id: newOrg.id, name: teamName })));
+  }
+
+  const templateFields = structure?.custom_fields ?? [];
+  if (templateFields.length > 0) {
+    await admin.from("custom_fields").insert(
+      templateFields.map((f) => ({
+        organization_id: newOrg.id,
+        entity: "task",
+        field_key: slugifyFieldKey(f.field_label),
+        field_label: f.field_label,
+        field_type: f.field_type,
+        field_options: f.field_options ?? null,
+        is_required: f.is_required ?? false,
+      }))
+    );
   }
 
   return NextResponse.json({ ok: true, organizationId: newOrg.id });
