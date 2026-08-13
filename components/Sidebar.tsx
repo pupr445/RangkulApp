@@ -3,36 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
-
-const ICONS = {
-  team: "📋",
-  members: "👥",
-  task: "✅",
-  calendar: "🗓️",
-  chat: "💬",
-  report: "📊",
-  docs: "📁",
-  settings: "⚙️",
-};
+import { buildNavItems } from "@/lib/nav-items";
 
 export function Sidebar() {
   const labels = useLabels();
   const canManage = useCanManage();
   const pathname = usePathname();
 
-  const items = [
-    { icon: ICONS.team, text: labels.navTeam, href: "/dashboard" },
-    { icon: ICONS.task, text: labels.navTask, href: "/dashboard/tasks" },
-    { icon: ICONS.calendar, text: "Kalender", href: "/dashboard/calendar" },
-    { icon: ICONS.chat, text: labels.navChat, href: "/dashboard/chat" },
-    { icon: ICONS.report, text: labels.navReport, href: "/dashboard/reports" },
-    { icon: ICONS.docs, text: labels.navDocs, href: "/dashboard/docs" },
-    { icon: ICONS.members, text: "Anggota Tim", href: "/dashboard/team" },
-    // Pengaturan hanya untuk Owner/Manager — Member biasa tidak boleh
-    // ubah nama organisasi, sektor, tim, atau custom field (lihat RLS
-    // di migration 006_role_based_access.sql).
-    ...(canManage ? [{ icon: ICONS.settings, text: "Pengaturan", href: "/dashboard/settings" }] : []),
-  ];
+  const items = buildNavItems(labels, canManage);
 
   return (
     <aside className="w-[230px] shrink-0 bg-surface border-r border-border p-3 hidden md:block">

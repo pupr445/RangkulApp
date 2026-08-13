@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useLabels, useSector } from "@/lib/labels/LabelProvider";
+import { MobileNav } from "@/components/MobileNav";
 
 export function TopBar({ userName }: { userName: string }) {
   const labels = useLabels();
@@ -19,7 +20,9 @@ export function TopBar({ userName }: { userName: string }) {
   }
 
   return (
-    <header className="bg-surface border-b border-border px-6 py-3.5 flex items-center gap-6 flex-wrap">
+    <header className="bg-surface border-b border-border px-4 sm:px-6 py-3.5 flex items-center gap-3 sm:gap-6 flex-wrap">
+      <MobileNav />
+
       <div className="flex items-center gap-2 font-display font-bold text-lg">
         <span
           className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-white text-sm font-bold transition-colors"
@@ -30,7 +33,7 @@ export function TopBar({ userName }: { userName: string }) {
         RANGKUL
       </div>
 
-      <span className="text-xs px-2.5 py-1 rounded-full bg-surfaceAlt text-inkMuted font-medium">
+      <span className="text-xs px-2.5 py-1 rounded-full bg-surfaceAlt text-inkMuted font-medium hidden sm:inline-block">
         {labels.sectorDisplayName}
       </span>
 

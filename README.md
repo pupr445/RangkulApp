@@ -26,6 +26,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Template Preset per Sektor** — saat onboarding, semua 6 sektor kini punya template siap pakai (`supabase/seed.sql`): tim default OTOMATIS DIBUAT (mis. sekolah langsung dapat Kelas 7A/8A/9A) **dan** field data relevan langsung tersedia lewat Custom Field Builder (mis. klinik langsung dapat field "Nama Pasien" wajib diisi + "Jenis Tindakan" dropdown) — sebelumnya cuma 3 dari 6 sektor yang punya template, dan template lama cuma nama tim tanpa field
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
+- ✅ **Navigasi Mobile** (`components/MobileNav.tsx`) — sebelumnya seluruh sidebar navigasi (Dashboard/Tugas/Kalender/Diskusi/Laporan/Dokumen/Anggota/Pengaturan) hilang total di layar HP tanpa pengganti apa pun. Sekarang ada tombol ☰ di TopBar yang membuka drawer berisi semua link yang sama persis dengan sidebar desktop.
 
 ## Yang BELUM ada (langkah lanjutan)
 
