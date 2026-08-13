@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
+import { logActivity } from "@/lib/data/activity-log";
 
 interface FileRow {
   name: string;
@@ -19,6 +20,7 @@ function formatBytes(bytes?: number) {
 
 export function DocsManager({ organizationId }: { organizationId: string }) {
   const labels = useLabels();
+  const currentUserId = useCurrentUserId();
   const supabase = createClient();
   const [files, setFiles] = useState<FileRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +72,17 @@ export function DocsManager({ organizationId }: { organizationId: string }) {
     if (uploadError) {
       setError(uploadError.message);
     } else {
+      const { data: userData } = await supabase.auth.getUser();
+      const u = userData?.user;
+      logActivity(supabase, {
+        organizationId,
+        actorId: currentUserId,
+        actorName: (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0] ?? "Seseorang",
+        action: "document.uploaded",
+        targetType: "document",
+        targetId: null,
+        targetLabel: file.name,
+      });
       await loadFiles();
     }
     e.target.value = "";

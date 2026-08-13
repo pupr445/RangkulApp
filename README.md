@@ -25,13 +25,14 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Override Manual Istilah** — Owner bisa ganti istilah tertentu manual (mis. "Guru" → "Wali Kelas") tanpa perlu ubah kode, di luar template sektor default
 - ✅ **Template Preset per Sektor** — saat onboarding, semua 6 sektor kini punya template siap pakai (`supabase/seed.sql`): tim default OTOMATIS DIBUAT (mis. sekolah langsung dapat Kelas 7A/8A/9A) **dan** field data relevan langsung tersedia lewat Custom Field Builder (mis. klinik langsung dapat field "Nama Pasien" wajib diisi + "Jenis Tindakan" dropdown) — sebelumnya cuma 3 dari 6 sektor yang punya template, dan template lama cuma nama tim tanpa field
 - ✅ Skema database PostgreSQL multi-tenant lengkap dengan Row Level Security (`supabase/schema.sql`)
+- ✅ **Aktivitas Tim** (`/dashboard/activity`) — riwayat aktivitas terstruktur: buat/hapus tugas, ubah status, buat/hapus tim, tambah custom field, undang anggota, upload dokumen. Bisa difilter per jenis & dicari per nama anggota. Tabel `activity_logs` sudah ada sejak schema.sql awal tapi belum pernah dipakai — sekarang aktif (`supabase/migrations/010_activity_log_labels.sql` menambah kolom label yang bisa dibaca).
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 - ✅ **Navigasi Mobile** (`components/MobileNav.tsx`) — sebelumnya seluruh sidebar navigasi (Dashboard/Tugas/Kalender/Diskusi/Laporan/Dokumen/Anggota/Pengaturan) hilang total di layar HP tanpa pengganti apa pun. Sekarang ada tombol ☰ di TopBar yang membuka drawer berisi semua link yang sama persis dengan sidebar desktop.
 
 ## Yang BELUM ada (langkah lanjutan)
 
 - ❌ Notifikasi push
-- ❌ Aktivitas tim harian (log)
+- ❌ Team Membership + pembatasan akses chat per tim (saat ini semua anggota organisasi bisa akses semua channel tim)
 - ❌ Halaman billing/subscription (Midtrans/Xendit)
 - ❌ Aplikasi mobile
 
@@ -75,6 +76,7 @@ Buka [http://localhost:3000](http://localhost:3000).
 8. **Jalankan juga `supabase/migrations/007_unique_owner.sql`** — mengunci satu akun hanya boleh punya 1 organisasi (cek dulu tidak ada duplikat sebelum menjalankan ini, lihat komentar di file SQL-nya).
 9. **Jalankan juga `supabase/migrations/008_private_chat_mentions.sql`** — kolom & tabel untuk Chat Privat (DM) dan status "sudah dibaca".
 10. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru, untuk SEMUA sektor (sekolah/klinik/bisnis/masjid/komunitas/lainnya). **Butuh migration `009_custom_field_builder.sql` sudah jalan lebih dulu**, karena seed ini juga mengisi custom_fields default. Tanpa seed ini, onboarding tetap jalan normal, cuma tidak ada tim/field yang otomatis dibuat. Catatan: seed ini menghapus lalu menulis ulang seluruh isi tabel `sector_templates` — jangan jalankan kalau kamu sudah mengedit baris template itu secara manual dan ingin mempertahankannya.
+11. **Jalankan juga `supabase/migrations/010_activity_log_labels.sql`** — menambah kolom `actor_name`/`target_label`/`detail` ke tabel `activity_logs` (yang sudah ada sejak schema.sql awal) supaya fitur Aktivitas Tim bisa dipakai.
 11. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 12. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
 13. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.

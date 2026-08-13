@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/data/activity-log";
 import { useLabels } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
@@ -75,25 +76,43 @@ export function NewTaskModal({
     setSaving(true);
     setError(null);
 
-    const { error: insertError } = await supabase.from("tasks").insert([
-      {
-        organization_id: organizationId,
-        title: title.trim(),
-        tag: tag.trim() || "Umum",
-        due_date: dueDate || null,
-        status,
-        assignee_id: assigneeId || null,
-        team_id: teamId || null,
-        custom_data: customValues,
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ] as any);
+    const { data: inserted, error: insertError } = await supabase
+      .from("tasks")
+      .insert([
+        {
+          organization_id: organizationId,
+          title: title.trim(),
+          tag: tag.trim() || "Umum",
+          due_date: dueDate || null,
+          status,
+          assignee_id: assigneeId || null,
+          team_id: teamId || null,
+          custom_data: customValues,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any)
+      .select("id")
+      .single();
 
     setSaving(false);
 
     if (insertError) {
       setError(insertError.message);
       return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+    const u = userData?.user;
+    if (u) {
+      logActivity(supabase, {
+        organizationId,
+        actorId: u.id,
+        actorName: (u.user_metadata?.full_name as string | undefined) ?? u.email?.split("@")[0] ?? "Seseorang",
+        action: "task.created",
+        targetType: "task",
+        targetId: (inserted as { id: string } | null)?.id ?? null,
+        targetLabel: title.trim(),
+      });
     }
 
     resetAndClose();

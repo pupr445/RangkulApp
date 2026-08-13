@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { TeamOption } from "@/lib/data/teams";
+import { logActivity } from "@/lib/data/activity-log";
 
 export function TeamsManager({
   organizationId,
@@ -14,6 +15,7 @@ export function TeamsManager({
   teams: TeamOption[];
 }) {
   const labels = useLabels();
+  const currentUserId = useCurrentUserId();
   const router = useRouter();
   const supabase = createClient();
 
@@ -29,15 +31,30 @@ export function TeamsManager({
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = supabase as any;
-    const { error: insertError } = await client.from("teams").insert([
-      { organization_id: organizationId, name: trimmed },
-    ]);
+    const { data: inserted, error: insertError } = await client
+      .from("teams")
+      .insert([{ organization_id: organizationId, name: trimmed }])
+      .select("id")
+      .single();
 
     setSaving(false);
     if (insertError) {
       setError(insertError.message);
       return;
     }
+
+    const { data: userData } = await supabase.auth.getUser();
+    const u = userData?.user;
+    logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName: (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0] ?? "Seseorang",
+      action: "team.created",
+      targetType: "team",
+      targetId: (inserted as { id: string } | null)?.id ?? null,
+      targetLabel: trimmed,
+    });
+
     setName("");
     router.refresh();
   }
@@ -49,7 +66,21 @@ export function TeamsManager({
       )
     )
       return;
+    const deletedTeam = teams.find((t) => t.id === id);
     await supabase.from("teams").delete().eq("id", id);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const u = userData?.user;
+    logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName: (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0] ?? "Seseorang",
+      action: "team.deleted",
+      targetType: "team",
+      targetId: null,
+      targetLabel: deletedTeam?.name ?? null,
+    });
+
     router.refresh();
   }
 

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { CustomFieldDef, CustomFieldType, slugifyFieldKey } from "@/lib/data/custom-fields";
+import { logActivity } from "@/lib/data/activity-log";
 
 const TYPE_LABEL: Record<CustomFieldType, string> = {
   text: "Teks",
@@ -21,6 +22,7 @@ export function CustomFieldsManager({
   fields: CustomFieldDef[];
 }) {
   const labels = useLabels();
+  const currentUserId = useCurrentUserId();
   const router = useRouter();
   const supabase = createClient();
 
@@ -81,6 +83,19 @@ export function CustomFieldsManager({
       setError(insertError.message);
       return;
     }
+
+    const { data: userData } = await supabase.auth.getUser();
+    const u = userData?.user;
+    logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName: (u?.user_metadata?.full_name as string | undefined) ?? u?.email?.split("@")[0] ?? "Seseorang",
+      action: "custom_field.created",
+      targetType: "custom_field",
+      targetId: null,
+      targetLabel: trimmed,
+    });
+
     setLabel("");
     setType("text");
     setOptionsText("");

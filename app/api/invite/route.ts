@@ -79,6 +79,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
+  const inviterName =
+    (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "Seseorang";
+
+  await client.from("activity_logs").insert([
+    {
+      organization_id: org.id,
+      actor_id: user.id,
+      actor_name: inviterName,
+      action: "member.invited",
+      target_type: "member",
+      target_id: null,
+      target_label: email,
+      detail: role === "manager" ? "sebagai Manager" : "sebagai Anggota",
+    },
+  ]);
+
   // Kirim email lewat Resend, kalau sudah dikonfigurasi.
   const resendApiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL;
@@ -87,8 +103,6 @@ export async function POST(request: Request) {
 
   if (resendApiKey && fromEmail) {
     const origin = request.headers.get("origin") ?? new URL(request.url).origin;
-    const inviterName =
-      (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "Seseorang";
 
     try {
       const res = await fetch("https://api.resend.com/emails", {

@@ -7,6 +7,7 @@ import { useLabels, useCanManage, useCurrentUserId } from "@/lib/labels/LabelPro
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
+import { logActivity } from "@/lib/data/activity-log";
 
 export interface EditableTask {
   id: string;
@@ -84,6 +85,8 @@ export function TaskDetailModal({
     setSaving(true);
     setError(null);
 
+    const statusChanged = status !== task.status;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = supabase as any;
     const { error: updateError } = await client
@@ -105,6 +108,21 @@ export function TaskDetailModal({
       setError(updateError.message);
       return;
     }
+
+    if (statusChanged) {
+      const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+      logActivity(supabase, {
+        organizationId,
+        actorId: currentUserId,
+        actorName,
+        action: "task.status_changed",
+        targetType: "task",
+        targetId: task.id,
+        targetLabel: title.trim(),
+        detail: `menjadi ${labels.statusLabels[status]}`,
+      });
+    }
+
     onClose();
     router.refresh();
   }
@@ -126,6 +144,18 @@ export function TaskDetailModal({
       setError(deleteError.message);
       return;
     }
+
+    const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+    logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName,
+      action: "task.deleted",
+      targetType: "task",
+      targetId: null,
+      targetLabel: task.title,
+    });
+
     onClose();
     router.refresh();
   }
