@@ -72,6 +72,15 @@ export function TaskDetailModal({
 
   async function handleSave() {
     if (!title.trim() || !task) return;
+
+    const missingRequired = customFields.find(
+      (f) => f.is_required && !customValues[f.field_key]?.trim()
+    );
+    if (missingRequired) {
+      setError(`"${missingRequired.field_label}" wajib diisi.`);
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -199,9 +208,9 @@ export function TaskDetailModal({
             <div className="flex gap-2">
               {(
                 [
-                  { key: "todo", label: "Belum Dikerjakan" },
-                  { key: "doing", label: "Sedang Dikerjakan" },
-                  { key: "done", label: "Selesai" },
+                  { key: "todo", label: labels.statusLabels.todo },
+                  { key: "doing", label: labels.statusLabels.doing },
+                  { key: "done", label: labels.statusLabels.done },
                 ] as const
               ).map((s) => (
                 <button
@@ -228,15 +237,35 @@ export function TaskDetailModal({
               </p>
               {customFields.map((f) => (
                 <div key={f.id}>
-                  <label className="block text-xs font-semibold mb-1.5">{f.field_label}</label>
-                  <input
-                    type={f.field_type === "number" ? "number" : f.field_type === "date" ? "date" : "text"}
-                    value={customValues[f.field_key] ?? ""}
-                    onChange={(e) =>
-                      setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
-                    }
-                    className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
-                  />
+                  <label className="block text-xs font-semibold mb-1.5">
+                    {f.field_label}
+                    {f.is_required && <span className="text-[#8A3E24]"> *</span>}
+                  </label>
+                  {f.field_type === "select" ? (
+                    <select
+                      value={customValues[f.field_key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
+                      }
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+                    >
+                      <option value="">Pilih...</option>
+                      {(f.field_options ?? []).map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={f.field_type === "number" ? "number" : f.field_type === "date" ? "date" : "text"}
+                      value={customValues[f.field_key] ?? ""}
+                      onChange={(e) =>
+                        setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
+                      }
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+                    />
+                  )}
                 </div>
               ))}
             </div>

@@ -1,4 +1,4 @@
-import { SectorKey } from "@/lib/labels/sectors";
+import { SectorKey, SECTOR_LABELS } from "@/lib/labels/sectors";
 
 export interface TaskCard {
   id: string;
@@ -24,7 +24,18 @@ export interface BoardColumn {
  * atau baru saja onboarding. Ganti dengan query ke tabel `tasks` begitu
  * data asli tersedia (lihat app/dashboard/page.tsx).
  */
+/** Terapkan nama kolom workflow sesuai sektor (bagian dari Sector Adaptation Engine). */
+function applyStatusLabels(sector: SectorKey, columns: BoardColumn[]): BoardColumn[] {
+  const s = (SECTOR_LABELS[sector] ?? SECTOR_LABELS.lainnya).statusLabels;
+  const nameById: Record<string, string> = { todo: s.todo, doing: s.doing, done: s.done };
+  return columns.map((c) => ({ ...c, name: nameById[c.id] ?? c.name }));
+}
+
 export function sampleColumnsFor(sector: SectorKey): BoardColumn[] {
+  return applyStatusLabels(sector, rawColumnsFor(sector));
+}
+
+function rawColumnsFor(sector: SectorKey): BoardColumn[] {
   switch (sector) {
     case "sekolah":
       return [

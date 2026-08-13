@@ -11,12 +11,6 @@ import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 
-const STATUS_LABEL: Record<FlatTask["status"], string> = {
-  todo: "Belum Dikerjakan",
-  doing: "Sedang Dikerjakan",
-  done: "Selesai",
-};
-
 export function TaskList({
   tasks,
   organizationId,
@@ -46,6 +40,8 @@ export function TaskList({
     if (teamFilter !== "all") list = list.filter((t) => t.teamId === teamFilter);
     return list;
   }, [tasks, filter, teamFilter]);
+
+  const STATUS_LABEL: Record<FlatTask["status"], string> = labels.statusLabels;
 
   const tabs: { key: "all" | FlatTask["status"]; label: string }[] = [
     { key: "all", label: "Semua" },

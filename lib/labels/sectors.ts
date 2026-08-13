@@ -53,6 +53,15 @@ export interface LabelSet {
   // Papan kerja default
   boardTitleExample: string;
   boardSubtitleExample: string;
+
+  // Status/workflow kerja — bagian dari Sector Adaptation Engine: bukan
+  // cuma istilah entitas yang berubah per sektor, tapi juga tahapan
+  // alur kerjanya (mis. klinik pakai "Terjadwal", masjid pakai "Direncanakan").
+  statusLabels: {
+    todo: string;
+    doing: string;
+    done: string;
+  };
 }
 
 export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
@@ -78,6 +87,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Tugas Baru",
     boardTitleExample: "Papan Kelas 9A",
     boardSubtitleExample: "Progres tugas & PR minggu ini",
+    statusLabels: { todo: "Belum Dikerjakan", doing: "Sedang Dikerjakan", done: "Selesai" },
   },
   klinik: {
     sectorDisplayName: "Klinik / Kesehatan",
@@ -101,6 +111,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Jadwal Baru",
     boardTitleExample: "Papan Poli Umum",
     boardSubtitleExample: "Jadwal & tindak lanjut pasien hari ini",
+    statusLabels: { todo: "Terjadwal", doing: "Sedang Berlangsung", done: "Selesai" },
   },
   bisnis: {
     sectorDisplayName: "Bisnis Umum",
@@ -124,6 +135,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Tugas Baru",
     boardTitleExample: "Papan Proyek: Website Client A",
     boardSubtitleExample: "Progres pekerjaan tim minggu ini",
+    statusLabels: { todo: "To Do", doing: "In Progress", done: "Selesai" },
   },
   masjid: {
     sectorDisplayName: "Masjid / Keagamaan",
@@ -147,6 +159,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Kegiatan Baru",
     boardTitleExample: "Papan Kepengurusan",
     boardSubtitleExample: "Kegiatan & program masjid bulan ini",
+    statusLabels: { todo: "Direncanakan", doing: "Sedang Berjalan", done: "Selesai" },
   },
   komunitas: {
     sectorDisplayName: "Komunitas / Organisasi",
@@ -170,6 +183,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Kegiatan Baru",
     boardTitleExample: "Papan Divisi Acara",
     boardSubtitleExample: "Persiapan program bulan ini",
+    statusLabels: { todo: "Direncanakan", doing: "Sedang Berjalan", done: "Selesai" },
   },
   lainnya: {
     sectorDisplayName: "Lainnya (Kustom)",
@@ -193,6 +207,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     newTaskCta: "+ Tugas Baru",
     boardTitleExample: "Papan Kerja",
     boardSubtitleExample: "Progres pekerjaan tim",
+    statusLabels: { todo: "Belum Dikerjakan", doing: "Sedang Dikerjakan", done: "Selesai" },
   },
 };
 

@@ -9,12 +9,6 @@ import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 
-const STATUS_LABEL: Record<FlatTask["status"], string> = {
-  todo: "Belum Dikerjakan",
-  doing: "Sedang Dikerjakan",
-  done: "Selesai",
-};
-
 const MONTH_NAMES = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
@@ -59,6 +53,7 @@ export function CalendarView({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
+  const STATUS_LABEL: Record<FlatTask["status"], string> = labels.statusLabels;
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);

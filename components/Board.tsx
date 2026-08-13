@@ -11,12 +11,6 @@ import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 
-const STATUS_OPTIONS: { key: "todo" | "doing" | "done"; label: string }[] = [
-  { key: "todo", label: "Belum Dikerjakan" },
-  { key: "doing", label: "Sedang Dikerjakan" },
-  { key: "done", label: "Selesai" },
-];
-
 export function Board({
   title,
   subtitle,
@@ -46,6 +40,12 @@ export function Board({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [teamFilter, setTeamFilter] = useState<string>("all");
+
+  const STATUS_OPTIONS: { key: "todo" | "doing" | "done"; label: string }[] = [
+    { key: "todo", label: labels.statusLabels.todo },
+    { key: "doing", label: labels.statusLabels.doing },
+    { key: "done", label: labels.statusLabels.done },
+  ];
 
   // Sinkron ulang saat props berubah (misalnya setelah router.refresh())
   useEffect(() => setCols(columns), [columns]);

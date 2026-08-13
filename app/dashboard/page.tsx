@@ -45,9 +45,9 @@ export default async function DashboardPage() {
     if (tasks && tasks.length > 0) {
       isSample = false;
       const grouped: Record<string, BoardColumn> = {
-        todo: { id: "todo", name: "Belum Dikerjakan", cards: [] },
-        doing: { id: "doing", name: "Sedang Dikerjakan", cards: [] },
-        done: { id: "done", name: "Selesai", cards: [] },
+        todo: { id: "todo", name: labels.statusLabels.todo, cards: [] },
+        doing: { id: "doing", name: labels.statusLabels.doing, cards: [] },
+        done: { id: "done", name: labels.statusLabels.done, cards: [] },
       };
       for (const t of tasks as Array<Record<string, unknown>>) {
         const status = (t.status as string) ?? "todo";

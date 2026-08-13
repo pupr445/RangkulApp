@@ -13,18 +13,14 @@ export interface FlatTask {
   customData?: Record<string, string>;
 }
 
-const STATUS_NAME_TO_KEY: Record<string, FlatTask["status"]> = {
-  "Belum Dikerjakan": "todo",
-  "Sedang Dikerjakan": "doing",
-  Selesai: "done",
-};
-
 /** Dipakai saat organisasi belum punya tugas sungguhan di database. */
 export function sampleFlatTasksFor(sector: SectorKey): FlatTask[] {
   const columns = sampleColumnsFor(sector);
   const flat: FlatTask[] = [];
   for (const col of columns) {
-    const status = STATUS_NAME_TO_KEY[col.name] ?? "todo";
+    // Kolom BoardColumn.id selalu "todo"/"doing"/"done" secara konsisten,
+    // walau nama tampilannya (col.name) sudah berbeda-beda per sektor.
+    const status = (["todo", "doing", "done"].includes(col.id) ? col.id : "todo") as FlatTask["status"];
     for (const card of col.cards) {
       flat.push({
         id: card.id,

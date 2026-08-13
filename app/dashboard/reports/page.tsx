@@ -6,16 +6,16 @@ import { ExportButton } from "@/components/ExportButton";
 
 export const runtime = "edge";
 
-const STATUS_META: Record<FlatTask["status"], { label: string; color: string }> = {
-  todo: { label: "Belum Dikerjakan", color: "#C0562C" },
-  doing: { label: "Sedang Dikerjakan", color: "#B8862F" },
-  done: { label: "Selesai", color: "#2F9E7A" },
-};
-
 export default async function ReportsPage() {
   const { supabase, user, org } = await getCurrentOrg();
   const sector = org?.sector_type ?? "lainnya";
   const labels = getLabels(sector, org?.label_overrides ?? null);
+
+  const STATUS_META: Record<FlatTask["status"], { label: string; color: string }> = {
+    todo: { label: labels.statusLabels.todo, color: "#C0562C" },
+    doing: { label: labels.statusLabels.doing, color: "#B8862F" },
+    done: { label: labels.statusLabels.done, color: "#2F9E7A" },
+  };
 
   let tasks: FlatTask[] = sampleFlatTasksFor(sector);
   let isSample = true;

@@ -6,7 +6,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 
 ## Apa yang sudah ada di starter ini
 
-- ✅ **Sector Adaptation Engine** (`lib/labels/sectors.ts`) — mesin inti yang menerjemahkan istilah generik ke istilah per sektor
+- ✅ **Sector Adaptation Engine** (`lib/labels/sectors.ts`) — mesin inti yang menerjemahkan istilah generik ke istilah per sektor, kini juga mencakup label status/workflow kerja (mis. klinik: "Terjadwal/Sedang Berlangsung/Selesai", masjid: "Direncanakan/Sedang Berjalan/Selesai") — bukan cuma istilah entitas
 - ✅ Autentikasi via Supabase (Google OAuth) + middleware proteksi route
 - ✅ Wizard onboarding untuk memilih sektor organisasi
 - ✅ **Dashboard / Kanban Board** — terhubung ke tabel `tasks`, fallback ke data contoh jika kosong
@@ -19,7 +19,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Anggota Tim** (`/dashboard/team`) — undang anggota lewat email, auto-join saat mereka login dengan email yang diundang
 - ✅ **Assign tugas ke anggota tertentu** — dropdown "Ditugaskan ke" di form tugas
 - ✅ **Email undangan otomatis** (opsional, lewat Resend — lihat bagian 3 di bawah)
-- ✅ **Custom Field per Sektor** (`/dashboard/settings`) — admin bisa tambah kolom data sendiri (mis. "Nilai", "Nama Pasien") tanpa perlu ubah kode
+- ✅ **Custom Field Builder per Sektor** (`/dashboard/settings`) — admin bisa tambah kolom data sendiri (Teks, Angka, Tanggal, atau **Pilihan/Dropdown** dengan opsi custom), tandai wajib diisi, dan validasi berjalan otomatis di form tugas (`supabase/migrations/009_custom_field_builder.sql`)
 - ✅ **Struktur Tim Majemuk** — satu organisasi bisa punya banyak tim/kelas/poli, tugas bisa dikaitkan & difilter per tim
 - ✅ **Kontrol Akses Berjenjang** — Owner/Manager bisa kelola tim/field/undangan, Member biasa cuma bisa ubah tugas miliknya sendiri (ditegakkan lewat RLS database, bukan cuma UI)
 - ✅ **Override Manual Istilah** — Owner bisa ganti istilah tertentu manual (mis. "Guru" → "Wali Kelas") tanpa perlu ubah kode, di luar template sektor default

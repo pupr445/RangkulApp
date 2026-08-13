@@ -8,13 +8,17 @@
  * 004_custom_field_values.sql).
  */
 
-export type CustomFieldType = "text" | "number" | "date";
+export type CustomFieldType = "text" | "number" | "date" | "select";
 
 export interface CustomFieldDef {
   id: string;
   field_key: string;
   field_label: string;
   field_type: CustomFieldType;
+  /** Daftar pilihan, hanya terisi untuk field_type "select". */
+  field_options?: string[] | null;
+  /** Kalau true, field wajib diisi sebelum tugas bisa disimpan. */
+  is_required?: boolean;
 }
 
 /** Ubah label field ("Nama Pasien") jadi key aman untuk disimpan ("nama_pasien"). */
@@ -31,7 +35,7 @@ export function slugifyFieldKey(label: string): string {
 export async function fetchTaskCustomFields(supabase: any, organizationId: string): Promise<CustomFieldDef[]> {
   const { data } = await supabase
     .from("custom_fields")
-    .select("id, field_key, field_label, field_type")
+    .select("id, field_key, field_label, field_type, field_options, is_required")
     .eq("organization_id", organizationId)
     .eq("entity", "task")
     .order("created_at", { ascending: true });
