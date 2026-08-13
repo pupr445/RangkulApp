@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useLabels, useSector } from "@/lib/labels/LabelProvider";
 import { MobileNav } from "@/components/MobileNav";
+import { NotificationBell } from "@/components/NotificationBell";
 
-export function TopBar({ userName }: { userName: string }) {
+export function TopBar({ userName, organizationId }: { userName: string; organizationId: string }) {
   const labels = useLabels();
   const sector = useSector();
   const router = useRouter();
@@ -44,6 +45,10 @@ export function TopBar({ userName }: { userName: string }) {
         <span>
           label.manager → <span className="text-ink">&quot;{labels.managerRole}&quot;</span>
         </span>
+      </div>
+
+      <div className="relative">
+        <NotificationBell organizationId={organizationId} />
       </div>
 
       <div className="relative">

@@ -23,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <LabelProvider sector={org.sector_type} overrides={org.label_overrides} role={role} userId={user.id}>
       <div className="min-h-screen flex flex-col">
-        <TopBar userName={displayName} />
+        <TopBar userName={displayName} organizationId={org.id} />
         <div className="flex flex-1">
           <Sidebar />
           {children}

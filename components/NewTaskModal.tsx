@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/data/activity-log";
+import { notifyUser } from "@/lib/data/notifications";
 import { useLabels } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
@@ -104,15 +105,28 @@ export function NewTaskModal({
     const { data: userData } = await supabase.auth.getUser();
     const u = userData?.user;
     if (u) {
+      const actorName = (u.user_metadata?.full_name as string | undefined) ?? u.email?.split("@")[0] ?? "Seseorang";
       logActivity(supabase, {
         organizationId,
         actorId: u.id,
-        actorName: (u.user_metadata?.full_name as string | undefined) ?? u.email?.split("@")[0] ?? "Seseorang",
+        actorName,
         action: "task.created",
         targetType: "task",
         targetId: (inserted as { id: string } | null)?.id ?? null,
         targetLabel: title.trim(),
       });
+
+      if (assigneeId) {
+        notifyUser(supabase, {
+          organizationId,
+          recipientId: assigneeId,
+          actorId: u.id,
+          actorName,
+          type: "assignment",
+          content: `${actorName} memberikan ${labels.taskLabel.toLowerCase()} "${title.trim()}" untukmu.`,
+          link: "/dashboard/tasks",
+        });
+      }
     }
 
     resetAndClose();

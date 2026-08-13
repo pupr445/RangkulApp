@@ -14,6 +14,7 @@ import {
   findMentions,
   splitMentionSegments,
 } from "@/lib/data/chat";
+import { notifyUser, notifyUsers } from "@/lib/data/notifications";
 
 export interface ChatMessage {
   id: string;
@@ -49,6 +50,7 @@ export function Chat({
   const otherMembers = useMemo(() => members.filter((m) => m.id !== currentUserId), [members, currentUserId]);
   const memberNames = useMemo(() => members.map((m) => m.name), [members]);
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
+  const memberIdByName = useMemo(() => new Map(members.map((m) => [m.name, m.id])), [members]);
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
 
   const isValidInitial =
@@ -163,7 +165,37 @@ export function Chat({
     ]);
 
     setSending(false);
-    if (error) setDraft(content);
+    if (error) {
+      setDraft(content);
+      return;
+    }
+
+    if (isDM) {
+      notifyUser(supabase, {
+        organizationId,
+        recipientId: activeConvo,
+        actorId: currentUserId,
+        actorName: currentUserName,
+        type: "dm",
+        content: `${currentUserName} mengirim pesan: "${content.slice(0, 60)}${content.length > 60 ? "…" : ""}"`,
+        link: `/dashboard/chat?with=${currentUserId}`,
+      });
+    } else {
+      const mentionedNames = findMentions(content, memberNames);
+      const mentionedIds = mentionedNames
+        .map((n) => memberIdByName.get(n))
+        .filter((id): id is string => !!id && id !== currentUserId);
+      if (mentionedIds.length > 0) {
+        notifyUsers(supabase, mentionedIds, {
+          organizationId,
+          actorId: currentUserId,
+          actorName: currentUserName,
+          type: "mention",
+          content: `${currentUserName} menyebut kamu: "${content.slice(0, 60)}${content.length > 60 ? "…" : ""}"`,
+          link: isTeamChannel ? `/dashboard/chat?with=${teamChannelKey(activeTeamId!)}` : "/dashboard/chat",
+        });
+      }
+    }
   }
 
   function handleInputChange(value: string) {

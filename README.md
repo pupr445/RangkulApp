@@ -28,12 +28,14 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ **Aktivitas Tim** (`/dashboard/activity`) — riwayat aktivitas terstruktur: buat/hapus tugas, ubah status, buat/hapus tim, tambah custom field, undang anggota, upload dokumen. Bisa difilter per jenis & dicari per nama anggota. Tabel `activity_logs` sudah ada sejak schema.sql awal tapi belum pernah dipakai — sekarang aktif (`supabase/migrations/010_activity_log_labels.sql` menambah kolom label yang bisa dibaca).
 - ✅ Konfigurasi deploy ke Cloudflare Pages + GitHub Actions CI/CD (sudah diuji berhasil deploy end-to-end)
 - ✅ **Team Membership + Pembatasan Akses Chat per Tim** — tabel `team_members` baru (`supabase/migrations/011_team_membership.sql`). Sekarang channel Chat per Tim hanya bisa dibaca/ditulis oleh anggota tim tsb (Owner/Manager tetap punya akses semua untuk pengawasan). Kelola keanggotaan lewat "Kelola Anggota" di halaman Pengaturan → Tim.
+- ✅ **Notification System** (`components/NotificationBell.tsx`) — ikon 🔔 realtime di TopBar dengan badge jumlah belum dibaca. Notifikasi otomatis untuk: @mention di chat, tugas yang di-assign ke kamu, pesan DM baru, dan perubahan status pada tugas yang kamu pegang (`supabase/migrations/012_notifications.sql`). **Catatan jujur**: pengingat deadline otomatis (H-1/hari-H) BELUM ada — itu butuh scheduled job (mis. Cloudflare Cron Triggers), beda kelas pekerjaan dari notifikasi berbasis aksi user seperti di atas.
 - ✅ **Navigasi Mobile** (`components/MobileNav.tsx`) — sebelumnya seluruh sidebar navigasi (Dashboard/Tugas/Kalender/Diskusi/Laporan/Dokumen/Anggota/Pengaturan) hilang total di layar HP tanpa pengganti apa pun. Sekarang ada tombol ☰ di TopBar yang membuka drawer berisi semua link yang sama persis dengan sidebar desktop.
 
 ## Yang BELUM ada (langkah lanjutan)
 
 - ❌ Notifikasi push
-- ❌ Notification system (mention, assignment, deadline, perubahan status)
+- ❌ Pengingat deadline otomatis (butuh scheduled job/cron — di luar cakupan notification system yang sudah ada)
+- ❌ Push notification native (browser/mobile push) — notifikasi saat ini in-app saja (bell icon), belum push ke luar aplikasi
 - ❌ Halaman billing/subscription (Midtrans/Xendit)
 - ❌ Aplikasi mobile
 
@@ -79,6 +81,7 @@ Buka [http://localhost:3000](http://localhost:3000).
 10. **Jalankan `supabase/seed.sql`** — sebelumnya opsional, sekarang disarankan dijalankan supaya fitur Template Preset (poin di atas) benar-benar terlihat efeknya saat onboarding organisasi baru, untuk SEMUA sektor (sekolah/klinik/bisnis/masjid/komunitas/lainnya). **Butuh migration `009_custom_field_builder.sql` sudah jalan lebih dulu**, karena seed ini juga mengisi custom_fields default. Tanpa seed ini, onboarding tetap jalan normal, cuma tidak ada tim/field yang otomatis dibuat. Catatan: seed ini menghapus lalu menulis ulang seluruh isi tabel `sector_templates` — jangan jalankan kalau kamu sudah mengedit baris template itu secara manual dan ingin mempertahankannya.
 11. **Jalankan juga `supabase/migrations/010_activity_log_labels.sql`** — menambah kolom `actor_name`/`target_label`/`detail` ke tabel `activity_logs` (yang sudah ada sejak schema.sql awal) supaya fitur Aktivitas Tim bisa dipakai.
 12. **Jalankan juga `supabase/migrations/011_team_membership.sql`** — menambah tabel `team_members` dan memperketat RLS `messages` supaya Chat per Tim benar-benar terbatas ke anggota tim tsb (sebelumnya semua anggota organisasi bisa akses semua channel tim).
+13. **Jalankan juga `supabase/migrations/012_notifications.sql`** — tabel baru untuk Notification System (mention, assignment, DM, perubahan status).
 11. Aktifkan provider **Google** di **Authentication > Providers**, isi Client ID & Secret dari [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 12. Tambahkan Redirect URL di **Authentication > URL Configuration**: `http://localhost:3000/auth/callback` (dan URL production kamu nanti).
 13. Salin `Project URL` dan `anon public key` dari **Project Settings > API** ke `.env.local`.

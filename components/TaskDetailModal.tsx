@@ -8,6 +8,7 @@ import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 import { logActivity } from "@/lib/data/activity-log";
+import { notifyUser } from "@/lib/data/notifications";
 
 export interface EditableTask {
   id: string;
@@ -86,6 +87,7 @@ export function TaskDetailModal({
     setError(null);
 
     const statusChanged = status !== task.status;
+    const assigneeChanged = assigneeId !== (task.assigneeId ?? "");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = supabase as any;
@@ -120,6 +122,33 @@ export function TaskDetailModal({
         targetId: task.id,
         targetLabel: title.trim(),
         detail: `menjadi ${labels.statusLabels[status]}`,
+      });
+
+      // Beri tahu penerima tugas kalau statusnya diubah ORANG LAIN
+      // (bukan oleh dia sendiri) — supaya dia tahu progresnya dicatat.
+      if (assigneeId && assigneeId !== currentUserId) {
+        notifyUser(supabase, {
+          organizationId,
+          recipientId: assigneeId,
+          actorId: currentUserId,
+          actorName,
+          type: "status_changed",
+          content: `${actorName} mengubah status "${title.trim()}" menjadi ${labels.statusLabels[status]}.`,
+          link: "/dashboard/tasks",
+        });
+      }
+    }
+
+    if (assigneeChanged && assigneeId && assigneeId !== currentUserId) {
+      const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+      notifyUser(supabase, {
+        organizationId,
+        recipientId: assigneeId,
+        actorId: currentUserId,
+        actorName,
+        type: "assignment",
+        content: `${actorName} memberikan ${labels.taskLabel.toLowerCase()} "${title.trim()}" untukmu.`,
+        link: "/dashboard/tasks",
       });
     }
 
