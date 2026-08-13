@@ -10,6 +10,19 @@
 
 export const TEAM_CONVERSATION_KEY = "team";
 
+/** Kunci percakapan untuk channel diskusi khusus satu tim/kelas/poli tertentu. */
+export function teamChannelKey(teamId: string): string {
+  return `team:${teamId}`;
+}
+
+export function isTeamChannelKey(key: string): boolean {
+  return key.startsWith("team:");
+}
+
+export function teamIdFromChannelKey(key: string): string | null {
+  return isTeamChannelKey(key) ? key.slice("team:".length) : null;
+}
+
 export function dmConversationKey(userIdA: string, userIdB: string): string {
   const [a, b] = [userIdA, userIdB].sort();
   return `dm:${a}:${b}`;

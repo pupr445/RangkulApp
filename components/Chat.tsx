@@ -4,9 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLabels } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
+import { TeamOption } from "@/lib/data/teams";
 import {
   TEAM_CONVERSATION_KEY,
   dmConversationKey,
+  teamChannelKey,
+  isTeamChannelKey,
+  teamIdFromChannelKey,
   findMentions,
   splitMentionSegments,
 } from "@/lib/data/chat";
@@ -17,6 +21,7 @@ export interface ChatMessage {
   sender_name: string | null;
   sender_id: string | null;
   recipient_id: string | null;
+  team_id?: string | null;
   created_at: string;
 }
 
@@ -25,6 +30,7 @@ export function Chat({
   currentUserId,
   currentUserName,
   members,
+  teams = [],
   initialMessages,
   initialConversation,
 }: {
@@ -32,8 +38,9 @@ export function Chat({
   currentUserId: string;
   currentUserName: string;
   members: MemberOption[];
+  teams?: TeamOption[];
   initialMessages: ChatMessage[];
-  /** "team" atau user_id anggota untuk langsung buka DM tertentu */
+  /** "team", "team:<id>", atau user_id anggota untuk langsung buka DM tertentu */
   initialConversation: string;
 }) {
   const labels = useLabels();
@@ -42,11 +49,15 @@ export function Chat({
   const otherMembers = useMemo(() => members.filter((m) => m.id !== currentUserId), [members, currentUserId]);
   const memberNames = useMemo(() => members.map((m) => m.name), [members]);
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
+  const teamById = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
+
+  const isValidInitial =
+    initialConversation === TEAM_CONVERSATION_KEY ||
+    memberById.has(initialConversation) ||
+    (isTeamChannelKey(initialConversation) && teamById.has(teamIdFromChannelKey(initialConversation) ?? ""));
 
   const [activeConvo, setActiveConvo] = useState<string>(
-    initialConversation === TEAM_CONVERSATION_KEY || memberById.has(initialConversation)
-      ? initialConversation
-      : TEAM_CONVERSATION_KEY
+    isValidInitial ? initialConversation : TEAM_CONVERSATION_KEY
   );
   const [allMessages, setAllMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState("");
@@ -56,17 +67,26 @@ export function Chat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isTeam = activeConvo === TEAM_CONVERSATION_KEY;
-  const conversationKey = isTeam ? TEAM_CONVERSATION_KEY : dmConversationKey(currentUserId, activeConvo);
+  const isOrgWide = activeConvo === TEAM_CONVERSATION_KEY;
+  const activeTeamId = isTeamChannelKey(activeConvo) ? teamIdFromChannelKey(activeConvo) : null;
+  const isTeamChannel = activeTeamId !== null;
+  const isTeam = isOrgWide || isTeamChannel; // "bukan DM" — dipakai untuk styling pengirim, dst.
+  const isDM = !isOrgWide && !isTeamChannel;
+  const conversationKey = isOrgWide
+    ? TEAM_CONVERSATION_KEY
+    : isTeamChannel
+    ? teamChannelKey(activeTeamId!)
+    : dmConversationKey(currentUserId, activeConvo);
 
   const visibleMessages = useMemo(() => {
-    if (isTeam) return allMessages.filter((m) => !m.recipient_id);
+    if (isOrgWide) return allMessages.filter((m) => !m.recipient_id && !m.team_id);
+    if (isTeamChannel) return allMessages.filter((m) => !m.recipient_id && m.team_id === activeTeamId);
     return allMessages.filter(
       (m) =>
         (m.sender_id === currentUserId && m.recipient_id === activeConvo) ||
         (m.sender_id === activeConvo && m.recipient_id === currentUserId)
     );
-  }, [allMessages, isTeam, activeConvo, currentUserId]);
+  }, [allMessages, isOrgWide, isTeamChannel, activeTeamId, activeConvo, currentUserId]);
 
   // Realtime: dengarkan pesan baru di seluruh organisasi, saring di client
   // sesuai percakapan yang sedang dibuka.
@@ -101,7 +121,7 @@ export function Chat({
       )
       .then(() => {});
 
-    if (!isTeam) {
+    if (isDM) {
       client
         .from("message_reads")
         .select("last_read_at")
@@ -135,7 +155,8 @@ export function Chat({
         organization_id: organizationId,
         sender_id: currentUserId,
         sender_name: currentUserName,
-        recipient_id: isTeam ? null : activeConvo,
+        recipient_id: isDM ? activeConvo : null,
+        team_id: isTeamChannel ? activeTeamId : null,
         content,
       },
     ]);
@@ -181,12 +202,35 @@ export function Chat({
           <button
             onClick={() => setActiveConvo(TEAM_CONVERSATION_KEY)}
             className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-medium mb-1 transition ${
-              isTeam ? "" : "text-inkMuted hover:bg-surfaceAlt"
+              isOrgWide ? "" : "text-inkMuted hover:bg-surfaceAlt"
             }`}
-            style={isTeam ? { backgroundColor: labels.accentSoft, color: labels.accent } : undefined}
+            style={isOrgWide ? { backgroundColor: labels.accentSoft, color: labels.accent } : undefined}
           >
-            💬 {labels.navChat}
+            💬 Diskusi Umum
           </button>
+          {teams.length > 0 && (
+            <>
+              <div className="text-[11px] uppercase tracking-wide text-inkMuted font-semibold px-2 pt-3 pb-2">
+                Chat per {labels.teamLabel}
+              </div>
+              {teams.map((t) => {
+                const key = teamChannelKey(t.id);
+                const active = activeConvo === key;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveConvo(key)}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-medium mb-1 transition truncate ${
+                      active ? "" : "text-inkMuted hover:bg-surfaceAlt"
+                    }`}
+                    style={active ? { backgroundColor: labels.accentSoft, color: labels.accent } : undefined}
+                  >
+                    # {t.name}
+                  </button>
+                );
+              })}
+            </>
+          )}
           <div className="text-[11px] uppercase tracking-wide text-inkMuted font-semibold px-2 pt-3 pb-2">
             Chat Privat
           </div>
@@ -211,10 +255,18 @@ export function Chat({
       <div className="flex-1 flex flex-col min-w-0">
         <div className="px-6 md:px-8 pt-6 pb-4 border-b border-border">
           <h1 className="text-2xl font-bold mb-1">
-            {isTeam ? labels.navChat : memberById.get(activeConvo) ?? "Chat Privat"}
+            {isOrgWide
+              ? "Diskusi Umum"
+              : isTeamChannel
+              ? teamById.get(activeTeamId!) ?? labels.teamLabel
+              : memberById.get(activeConvo) ?? "Chat Privat"}
           </h1>
           <p className="text-sm text-inkMuted">
-            {isTeam ? "Chat langsung untuk seluruh anggota organisasi." : "Percakapan privat, hanya kalian berdua."}
+            {isOrgWide
+              ? "Chat langsung untuk seluruh anggota organisasi."
+              : isTeamChannel
+              ? `Chat khusus anggota ${labels.teamLabel.toLowerCase()} ini.`
+              : "Percakapan privat, hanya kalian berdua."}
           </p>
         </div>
 
@@ -225,7 +277,7 @@ export function Chat({
           {visibleMessages.map((m, idx) => {
             const isMine = m.sender_id === currentUserId;
             const isLastMine = isMine && idx === visibleMessages.length - 1;
-            const wasRead = isLastMine && !isTeam && otherLastRead && new Date(otherLastRead) >= new Date(m.created_at);
+            const wasRead = isLastMine && isDM && otherLastRead && new Date(otherLastRead) >= new Date(m.created_at);
             return (
               <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[75%]">

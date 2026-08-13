@@ -11,7 +11,7 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 - ✅ Wizard onboarding untuk memilih sektor organisasi
 - ✅ **Dashboard / Kanban Board** — terhubung ke tabel `tasks`, fallback ke data contoh jika kosong
 - ✅ **Semua Tugas/PR** (`/dashboard/tasks`) — daftar tugas lintas tim dengan filter status
-- ✅ **Diskusi** (`/dashboard/chat`) — chat real-time via Supabase Realtime, **plus Chat Privat (DM)**, **@mention**, dan indikator "sudah dibaca" untuk DM
+- ✅ **Diskusi** (`/dashboard/chat`) — chat real-time via Supabase Realtime dengan 3 jenis percakapan: **Diskusi Umum** (se-organisasi), **Chat per Tim** (channel terpisah untuk tiap tim/kelas/poli, pakai kolom `team_id` yang sejak awal sudah ada di tabel `messages` tapi belum dipakai), dan **Chat Privat (DM)** — plus **@mention** dan indikator "sudah dibaca" untuk DM
 - ✅ **Rapor Kinerja** (`/dashboard/reports`) — agregasi status tugas, **breakdown per anggota**, dan **ekspor CSV**
 - ✅ **Dokumen** (`/dashboard/docs`) — upload & unduh file sungguhan via Supabase Storage
 - ✅ **Kalender** (`/dashboard/calendar`) — tampilan bulanan tugas berdasarkan tenggat (`due_date`), klik tanggal untuk lihat daftar tugasnya, klik tugas untuk edit
@@ -29,7 +29,6 @@ Lihat juga dokumen konsep produk lengkap (`Konsep-Produk-RANGKUL.docx`) dan wire
 
 ## Yang BELUM ada (langkah lanjutan)
 
-- ❌ Chat per-tim (masih 1 Diskusi Tim umum se-organisasi; Chat Privat 1-on-1 sudah ada)
 - ❌ Notifikasi push
 - ❌ Aktivitas tim harian (log)
 - ❌ Halaman billing/subscription (Midtrans/Xendit)

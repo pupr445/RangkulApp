@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentOrg } from "@/lib/data/org";
 import { fetchMemberOptions } from "@/lib/data/members";
+import { fetchTeams } from "@/lib/data/teams";
 import { TEAM_CONVERSATION_KEY } from "@/lib/data/chat";
 import { Chat, ChatMessage } from "@/components/Chat";
 
@@ -20,12 +21,12 @@ export default async function ChatPage({
   const currentUserName =
     (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "Pengguna";
 
-  // Ambil pesan Diskusi Tim + semua DM yang melibatkan user ini (RLS di
-  // migration 008 sudah memastikan hanya baris yang berhak dilihat yang
-  // benar-benar dikembalikan).
+  // Ambil pesan Diskusi Umum + semua channel per tim + semua DM yang
+  // melibatkan user ini (RLS di migration 008 sudah memastikan hanya
+  // baris yang berhak dilihat yang benar-benar dikembalikan).
   const { data } = await supabase
     .from("messages")
-    .select("id, content, sender_name, sender_id, recipient_id, created_at")
+    .select("id, content, sender_name, sender_id, recipient_id, team_id, created_at")
     .eq("organization_id", org.id)
     .order("created_at", { ascending: true })
     .limit(300);
@@ -33,6 +34,7 @@ export default async function ChatPage({
   const initialMessages = (data as ChatMessage[] | null) ?? [];
 
   const members = await fetchMemberOptions(supabase, org.id, { id: user.id, name: currentUserName });
+  const teams = await fetchTeams(supabase, org.id);
 
   const params = await searchParams;
   const initialConversation = params.with?.trim() || TEAM_CONVERSATION_KEY;
@@ -44,6 +46,7 @@ export default async function ChatPage({
       currentUserName={currentUserName}
       initialMessages={initialMessages}
       members={members}
+      teams={teams}
       initialConversation={initialConversation}
     />
   );
