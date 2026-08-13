@@ -13,6 +13,7 @@ export default function OnboardingPage() {
   const [previewTeams, setPreviewTeams] = useState<string[]>([]);
   const [previewFields, setPreviewFields] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [setupWarning, setSetupWarning] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -106,6 +107,14 @@ export default function OnboardingPage() {
 
     if (!res.ok) {
       setError(body?.error ?? "Gagal membuat organisasi. Coba lagi.");
+      return;
+    }
+
+    if (body?.warning) {
+      // Organisasi berhasil dibuat, tapi sebagian template otomatis gagal
+      // diterapkan (mis. migrasi database belum lengkap) — tampilkan dulu
+      // ke admin, jangan langsung redirect diam-diam.
+      setSetupWarning(body.warning as string);
       return;
     }
 
@@ -215,12 +224,29 @@ export default function OnboardingPage() {
         </div>
       )}
 
+      {setupWarning && (
+        <div className="mb-4 bg-[#FBF0E6] border border-[#E8C9A8] rounded-lg p-4">
+          <p className="text-sm font-semibold mb-1">Organisasi berhasil dibuat, tapi ada catatan</p>
+          <p className="text-sm text-inkMuted mb-3">{setupWarning}</p>
+          <p className="text-xs text-inkMuted mb-3">
+            Tidak masalah — kamu tetap bisa lanjut pakai RANGKUL. Tim & field tambahan bisa dibuat manual kapan saja
+            dari halaman Pengaturan.
+          </p>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="bg-ink text-white rounded-lg px-4 py-2 text-sm font-semibold"
+          >
+            Lanjut ke Dashboard
+          </button>
+        </div>
+      )}
+
       {error && (
         <p className="text-sm text-[#8A3E24] mb-3">{error}</p>
       )}
 
       <button
-        disabled={!selected || !orgName.trim() || loading}
+        disabled={!selected || !orgName.trim() || loading || !!setupWarning}
         onClick={handleCreateOrganization}
         className="bg-ink text-white rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-40 transition"
       >

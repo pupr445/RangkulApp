@@ -75,6 +75,14 @@ export async function POST(request: Request) {
   }
 
   // Template Preset per Sektor: buatkan tim & field data default kalau tersedia.
+  // Kedua insert di bawah ini SENGAJA tidak menggagalkan pembuatan organisasi
+  // kalau errornya di sini (organisasi tetap berguna tanpa template) — tapi
+  // errornya tetap dikumpulkan supaya admin diberi tahu, bukan didiamkan.
+  // Skenario nyata yang bisa terjadi: migration 009_custom_field_builder.sql
+  // belum dijalankan di database ini, sehingga insert custom_fields gagal
+  // karena kolom field_options/is_required belum ada.
+  const warnings: string[] = [];
+
   const { data: template } = await admin
     .from("sector_templates")
     .select("default_structure")
@@ -97,14 +105,17 @@ export async function POST(request: Request) {
 
   const teamNames = structure?.teams ?? [];
   if (teamNames.length > 0) {
-    await admin
+    const { error: teamsError } = await admin
       .from("teams")
       .insert(teamNames.map((teamName) => ({ organization_id: newOrg.id, name: teamName })));
+    if (teamsError) {
+      warnings.push(`Tim bawaan sektor gagal dibuat otomatis (${teamsError.message}).`);
+    }
   }
 
   const templateFields = structure?.custom_fields ?? [];
   if (templateFields.length > 0) {
-    await admin.from("custom_fields").insert(
+    const { error: fieldsError } = await admin.from("custom_fields").insert(
       templateFields.map((f) => ({
         organization_id: newOrg.id,
         entity: "task",
@@ -115,7 +126,16 @@ export async function POST(request: Request) {
         is_required: f.is_required ?? false,
       }))
     );
+    if (fieldsError) {
+      warnings.push(
+        `Field data bawaan sektor gagal dibuat otomatis (${fieldsError.message}). Kemungkinan migration 009_custom_field_builder.sql belum dijalankan.`
+      );
+    }
   }
 
-  return NextResponse.json({ ok: true, organizationId: newOrg.id });
+  return NextResponse.json({
+    ok: true,
+    organizationId: newOrg.id,
+    warning: warnings.length > 0 ? warnings.join(" ") : null,
+  });
 }

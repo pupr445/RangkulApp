@@ -33,12 +33,20 @@ export function slugifyFieldKey(label: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchTaskCustomFields(supabase: any, organizationId: string): Promise<CustomFieldDef[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("custom_fields")
     .select("id, field_key, field_label, field_type, field_options, is_required")
     .eq("organization_id", organizationId)
     .eq("entity", "task")
     .order("created_at", { ascending: true });
+
+  if (error) {
+    // Gagal diam-diam di sini akan terlihat seperti "belum ada custom field
+    // sama sekali" di UI, padahal penyebabnya bisa jadi migration
+    // 009_custom_field_builder.sql belum dijalankan (kolom field_options /
+    // is_required belum ada di database). Log supaya kelihatan di server.
+    console.error("fetchTaskCustomFields gagal:", error.message);
+  }
 
   return (data as CustomFieldDef[] | null) ?? [];
 }
