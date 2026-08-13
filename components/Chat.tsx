@@ -64,6 +64,7 @@ export function Chat({
   const [sending, setSending] = useState(false);
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -193,14 +194,36 @@ export function Chat({
 
   return (
     <main className="flex-1 flex min-w-0 h-[calc(100vh-64px)]">
-      {/* Sidebar percakapan */}
-      <aside className="w-[220px] shrink-0 border-r border-border bg-surface overflow-y-auto hidden sm:block">
+      {/* Overlay gelap saat drawer percakapan terbuka di mobile */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 sm:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      {/* Sidebar percakapan — drawer di mobile (toggle lewat tombol di header konten), selalu tampil mulai breakpoint sm */}
+      <aside
+        className={`w-[240px] sm:w-[220px] shrink-0 border-r border-border bg-surface overflow-y-auto fixed sm:static inset-y-0 left-0 z-50 sm:z-auto transition-transform sm:translate-x-0 ${
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="p-3">
-          <div className="text-[11px] uppercase tracking-wide text-inkMuted font-semibold px-2 pt-1 pb-2">
-            Percakapan
+          <div className="flex items-center justify-between px-2 pt-1 pb-2 sm:block">
+            <div className="text-[11px] uppercase tracking-wide text-inkMuted font-semibold">Percakapan</div>
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              className="sm:hidden text-inkMuted text-lg leading-none px-1"
+              aria-label="Tutup"
+            >
+              ×
+            </button>
           </div>
           <button
-            onClick={() => setActiveConvo(TEAM_CONVERSATION_KEY)}
+            onClick={() => {
+              setActiveConvo(TEAM_CONVERSATION_KEY);
+              setMobileNavOpen(false);
+            }}
             className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-medium mb-1 transition ${
               isOrgWide ? "" : "text-inkMuted hover:bg-surfaceAlt"
             }`}
@@ -219,7 +242,10 @@ export function Chat({
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setActiveConvo(key)}
+                    onClick={() => {
+                      setActiveConvo(key);
+                      setMobileNavOpen(false);
+                    }}
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-medium mb-1 transition truncate ${
                       active ? "" : "text-inkMuted hover:bg-surfaceAlt"
                     }`}
@@ -237,7 +263,10 @@ export function Chat({
           {otherMembers.map((m) => (
             <button
               key={m.id}
-              onClick={() => setActiveConvo(m.id)}
+              onClick={() => {
+                setActiveConvo(m.id);
+                setMobileNavOpen(false);
+              }}
               className={`w-full text-left px-2.5 py-2 rounded-lg text-sm font-medium mb-1 transition truncate ${
                 activeConvo === m.id ? "" : "text-inkMuted hover:bg-surfaceAlt"
               }`}
@@ -253,7 +282,13 @@ export function Chat({
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-6 md:px-8 pt-6 pb-4 border-b border-border">
+        <div className="px-4 sm:px-6 md:px-8 pt-6 pb-4 border-b border-border">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="sm:hidden mb-2 text-xs font-semibold px-3 py-1.5 rounded-full border border-border text-inkMuted"
+          >
+            ☰ Ganti Percakapan
+          </button>
           <h1 className="text-2xl font-bold mb-1">
             {isOrgWide
               ? "Diskusi Umum"

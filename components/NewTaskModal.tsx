@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useLabels } from "@/lib/labels/LabelProvider";
@@ -15,6 +15,7 @@ export function NewTaskModal({
   members = [],
   customFields = [],
   teams = [],
+  defaultDueDate,
 }: {
   open: boolean;
   onClose: () => void;
@@ -22,6 +23,8 @@ export function NewTaskModal({
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
   teams?: TeamOption[];
+  /** Prefill tanggal tenggat, mis. saat dibuka dari tanggal yang dipilih di Kalender. */
+  defaultDueDate?: string;
 }) {
   const labels = useLabels();
   const router = useRouter();
@@ -36,6 +39,13 @@ export function NewTaskModal({
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Setiap modal dibuka, isi tenggat dari defaultDueDate kalau ada (mis.
+  // klik tanggal tertentu di Kalender lalu "Tambah Tugas").
+  useEffect(() => {
+    if (open) setDueDate(defaultDueDate ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultDueDate]);
 
   if (!open) return null;
 
