@@ -91,3 +91,13 @@ Sebelum deploy, jalankan migration 013 dan 014 pada Supabase target. Setelah itu
 ## Wave 3 Typecheck Hotfix v5
 - Memindahkan operasi `notifications.update({ is_read: true })` dari page component ke helper `markNotificationsRead` di `lib/data/notifications.ts` menggunakan pola akses data yang sama dengan helper notifikasi lainnya.
 - Tujuannya menghindari inferensi `never` pada Supabase typed client di halaman Notification Center.
+
+
+## Wave 3 Cloudflare deployment fix
+- Added `export const runtime = "edge";` to `app/dashboard/notifications/page.tsx` so `/dashboard/notifications` is compatible with Cloudflare Pages / next-on-pages Edge Runtime.
+
+
+## Cloudflare Wave 3 follow-up fix
+- Converted `/dashboard/notifications` to an Edge-runtime Server Component wrapper.
+- Moved the interactive Notification Center UI into `notifications-client.tsx` with `"use client"`.
+- This keeps React client hooks in a Client Component while satisfying Cloudflare `next-on-pages` Edge runtime requirements.
