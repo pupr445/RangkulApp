@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
+import { LeaderSummary, LeaderSummaryData } from "@/components/LeaderSummary";
 
 export function Board({
   title,
@@ -20,6 +21,7 @@ export function Board({
   members = [],
   customFields = [],
   teams = [],
+  leaderSummary = null,
 }: {
   title: string;
   subtitle: string;
@@ -29,6 +31,7 @@ export function Board({
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
   teams?: TeamOption[];
+  leaderSummary?: LeaderSummaryData | null;
 }) {
   const labels = useLabels();
   const workflowStages = useWorkflowStages();
@@ -100,6 +103,8 @@ export function Board({
           {labels.newTaskCta}
         </button>
       </div>
+
+      {leaderSummary && <LeaderSummary data={leaderSummary} />}
 
       {isSample && (
         <p className="text-xs text-inkMuted bg-surfaceAlt border border-border rounded-lg px-3.5 py-2 mb-4">

@@ -6,11 +6,12 @@ import { fetchTaskCustomFields } from "@/lib/data/custom-fields";
 import { fetchTeams } from "@/lib/data/teams";
 import { Board } from "@/components/Board";
 import { normalizeWorkflowStages } from "@/lib/data/workflows";
+import { fetchLeaderDashboard } from "@/lib/data/leader-dashboard";
 
 export const runtime = "edge";
 
 export default async function DashboardPage() {
-  const { supabase, user, org } = await getCurrentOrg();
+  const { supabase, user, org, role } = await getCurrentOrg();
 
   const sector = org?.sector_type ?? "lainnya";
   const labels = getLabels(sector, org?.label_overrides ?? null);
@@ -37,7 +38,13 @@ export default async function DashboardPage() {
   const customFields = org ? await fetchTaskCustomFields(supabase, org.id) : [];
   const teams = org ? await fetchTeams(supabase, org.id) : [];
 
+  let leaderSummary = null;
+
   if (org) {
+    if (role === "owner" || role === "manager") {
+      leaderSummary = await fetchLeaderDashboard(supabase, org.id, workflowStages[workflowStages.length - 1]?.key ?? "done");
+    }
+
     const { data: tasks } = await supabase
       .from("tasks")
       .select("id, title, status, tag, due_date, assignee_id, team_id, custom_data")
@@ -80,6 +87,7 @@ export default async function DashboardPage() {
       members={members}
       customFields={customFields}
       teams={teams}
+      leaderSummary={(role === "owner" || role === "manager") ? leaderSummary : null}
     />
   );
 }

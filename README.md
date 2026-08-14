@@ -212,3 +212,22 @@ Ikuti roadmap 4 fase yang sudah dijabarkan di dokumen konsep produk (`Konsep-Pro
 - **Fase 2**: custom field builder, mobile app, sektor gelombang 2
 - **Fase 3**: kalender, laporan lanjutan, integrasi API
 - **Fase 4**: sektor niche, multi-bahasa, billing
+
+## Wave 4 — Deadline Reminder & Leader Dashboard
+- Tambahkan migration `017_deadline_reminders.sql` untuk deduplikasi reminder deadline.
+- Tambahkan endpoint `GET /api/cron/deadline-reminders` yang membuat notifikasi H-1 dan hari-H untuk task yang memiliki assignee.
+- Endpoint scheduler diamankan dengan `CRON_SECRET` via header `x-cron-secret` atau `Authorization: Bearer ...`.
+- Tambahkan `Ringkasan Pimpinan` pada dashboard untuk Owner/Manager: total task, selesai, terlambat, due hari ini, jumlah anggota, completion rate, dan aktivitas terbaru.
+- Reminder deadline memerlukan scheduler eksternal/Cloudflare Worker Cron untuk memanggil endpoint secara berkala; endpoint tidak berjalan otomatis hanya karena Pages ter-deploy.
+
+### Scheduler Deadline Reminder (Cloudflare Worker)
+Cloudflare Cron Triggers menjalankan fungsi `scheduled()` pada Worker dan waktunya memakai UTC. Worker `workers/deadline-reminder/index.ts` disiapkan untuk memanggil endpoint reminder RANGKUL setiap jam.
+
+Deploy scheduler terpisah dari Cloudflare Pages:
+```bash
+npx wrangler secret put CRON_SECRET --config wrangler.deadline-reminder.toml
+# set variable RANGKUL_APP_URL di config/Cloudflare Worker sesuai deployment RANGKUL
+npm run deadline-reminder:deploy
+```
+
+Worker hanya memanggil endpoint dan endpoint tetap dilindungi `CRON_SECRET`. Cron Trigger dieksekusi pada UTC, sehingga jadwal hourly cukup untuk menangkap H-1 dan hari-H tanpa membuat notifikasi ganda karena `dedupe_key`.

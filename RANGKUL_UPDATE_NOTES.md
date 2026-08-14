@@ -101,3 +101,24 @@ Sebelum deploy, jalankan migration 013 dan 014 pada Supabase target. Setelah itu
 - Converted `/dashboard/notifications` to an Edge-runtime Server Component wrapper.
 - Moved the interactive Notification Center UI into `notifications-client.tsx` with `"use client"`.
 - This keeps React client hooks in a Client Component while satisfying Cloudflare `next-on-pages` Edge runtime requirements.
+
+## Wave 4 — Deadline Reminder & Leader Dashboard
+- Menambahkan `supabase/migrations/017_deadline_reminders.sql` dengan `entity_type`, `entity_id`, `dedupe_key`, unique index deduplikasi, dan index entitas pada notifications.
+- Menambahkan `app/api/cron/deadline-reminders/route.ts` (Edge Runtime) untuk membuat reminder H-1 dan hari-H kepada assignee task.
+- Reminder menggunakan `dedupe_key` agar scheduler aman dipanggil berulang tanpa membuat notifikasi ganda.
+- Endpoint dilindungi `CRON_SECRET`; dapat dipanggil melalui `x-cron-secret` atau Bearer token.
+- Menambahkan `lib/data/leader-dashboard.ts` dan `components/LeaderSummary.tsx`.
+- Dashboard utama sekarang menampilkan Ringkasan Pimpinan untuk Owner/Manager: total, selesai, terlambat, due hari ini, jumlah anggota, completion rate, dan aktivitas terbaru.
+- Reminder deadline belum menjadi scheduler otomatis sampai endpoint tersebut dijalankan berkala oleh Cloudflare Worker Cron atau scheduler eksternal.
+
+### Wave 4 — Scheduler Cloudflare untuk Deadline Reminder
+- Menambahkan `workers/deadline-reminder/index.ts` sebagai Worker dengan `scheduled()` handler.
+- Menambahkan `wrangler.deadline-reminder.toml` dengan Cron Trigger hourly (`0 * * * *`, UTC).
+- Menambahkan script `deadline-reminder:deploy`.
+- Scheduler memanggil endpoint `/api/cron/deadline-reminders` pada deployment RANGKUL dengan `x-cron-secret`.
+- Ini adalah Worker scheduler terpisah dari Cloudflare Pages; Pages tetap menjadi aplikasi utama, Worker menangani jadwal. Cron Triggers berjalan pada UTC.
+
+
+## Wave 4 typecheck hotfix
+
+Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` mereferensikan `ScheduledController` tanpa type definition yang tersedia pada tsconfig root. Parameter scheduler sekarang ditipkan sebagai `unknown` karena controller tidak digunakan oleh handler. Ini tidak mengubah perilaku runtime Cloudflare Cron.

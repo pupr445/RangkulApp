@@ -10,7 +10,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "pages:build": "npx @cloudflare/next-on-pages",
-    "pages:deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static"
+    "pages:deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static",
+    "deadline-reminder:deploy": "wrangler deploy --config wrangler.deadline-reminder.toml"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

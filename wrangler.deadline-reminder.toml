@@ -1,0 +1,8 @@
+name = "rangkul-deadline-reminder"
+main = "workers/deadline-reminder/index.ts"
+compatibility_date = "2026-08-14"
+
+[triggers]
+# Menjalankan pemeriksaan setiap jam (UTC). Endpoint memiliki deduplikasi,
+# sehingga pemanggilan berulang tidak membuat notification ganda.
+crons = ["0 * * * *"]
