@@ -96,12 +96,47 @@ export function TeamsManager({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = supabase as any;
 
+    const targetTeam = teams.find((t) => t.id === teamId);
+    const targetMember = orgMembers.find((m) => m.id === userId);
+    const { data: currentAuth } = await supabase.auth.getUser();
+    const actor = currentAuth?.user;
+    const actorName =
+      (actor?.user_metadata?.full_name as string | undefined) ??
+      actor?.email?.split("@")[0] ??
+      "Seseorang";
+
     if (isMember) {
-      await client.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
+      const { error } = await client.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
+      if (error) setError(error.message);
+      else {
+        logActivity(supabase, {
+          organizationId,
+          actorId: currentUserId,
+          actorName,
+          action: "team.member_removed",
+          targetType: "team",
+          targetId: teamId,
+          targetLabel: targetTeam?.name ?? null,
+          detail: `anggota ${targetMember?.name ?? "pengguna"}`,
+        });
+      }
     } else {
-      await client
+      const { error } = await client
         .from("team_members")
         .insert([{ organization_id: organizationId, team_id: teamId, user_id: userId }]);
+      if (error) setError(error.message);
+      else {
+        logActivity(supabase, {
+          organizationId,
+          actorId: currentUserId,
+          actorName,
+          action: "team.member_added",
+          targetType: "team",
+          targetId: teamId,
+          targetLabel: targetTeam?.name ?? null,
+          detail: `anggota ${targetMember?.name ?? "pengguna"}`,
+        });
+      }
     }
 
     setTogglingMemberId(null);

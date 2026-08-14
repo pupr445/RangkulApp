@@ -108,6 +108,51 @@ export function TaskDetailModal({
       return;
     }
 
+    const teamChanged = teamId !== (task.teamId ?? "");
+    const titleChanged = title.trim() !== task.title;
+    const dueChanged = dueDate !== (task.due && task.due !== "-" ? task.due : "");
+
+    if (titleChanged || dueChanged || customFields.some((f) => (customValues[f.field_key] ?? "") !== (task.customData?.[f.field_key] ?? "")) || tag.trim() !== task.tag) {
+      const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+      logActivity(supabase, {
+        organizationId,
+        actorId: currentUserId,
+        actorName,
+        action: "task.updated",
+        targetType: "task",
+        targetId: task.id,
+        targetLabel: title.trim(),
+      });
+    }
+
+    if (assigneeChanged) {
+      const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+      logActivity(supabase, {
+        organizationId,
+        actorId: currentUserId,
+        actorName,
+        action: "task.assignee_changed",
+        targetType: "task",
+        targetId: task.id,
+        targetLabel: title.trim(),
+        detail: `menjadi ${members.find((m) => m.id === assigneeId)?.name ?? "Belum ditentukan"}`,
+      });
+    }
+
+    if (teamChanged) {
+      const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
+      logActivity(supabase, {
+        organizationId,
+        actorId: currentUserId,
+        actorName,
+        action: "task.team_changed",
+        targetType: "task",
+        targetId: task.id,
+        targetLabel: title.trim(),
+        detail: `ke ${teams.find((t) => t.id === teamId)?.name ?? "tanpa tim"}`,
+      });
+    }
+
     if (statusChanged) {
       const actorName = members.find((m) => m.id === currentUserId)?.name ?? "Seseorang";
       logActivity(supabase, {

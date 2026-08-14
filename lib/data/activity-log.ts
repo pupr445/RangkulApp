@@ -4,6 +4,11 @@ export type ActivityAction =
   | "task.deleted"
   | "team.created"
   | "team.deleted"
+  | "team.member_added"
+  | "team.member_removed"
+  | "task.updated"
+  | "task.assignee_changed"
+  | "task.team_changed"
   | "member.invited"
   | "custom_field.created"
   | "custom_field.updated"
@@ -97,6 +102,11 @@ const ACTION_VERB: Record<string, string> = {
   "task.deleted": "menghapus",
   "team.created": "membuat",
   "team.deleted": "menghapus",
+  "team.member_added": "menambahkan anggota ke",
+  "team.member_removed": "mengeluarkan anggota dari",
+  "task.updated": "mengubah",
+  "task.assignee_changed": "mengubah penanggung jawab",
+  "task.team_changed": "memindahkan",
   "member.invited": "mengundang",
   "custom_field.created": "menambahkan field",
   "custom_field.updated": "mengubah field",
@@ -112,6 +122,7 @@ const TARGET_NOUN: Record<string, string> = {
   member: "anggota",
   custom_field: "field",
   document: "dokumen",
+  template: "template",
 };
 
 /** Ubah satu entri log jadi kalimat Indonesia yang enak dibaca, mis. "Budi mengubah status tugas \"Rapat\" menjadi Selesai". */

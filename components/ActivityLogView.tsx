@@ -10,6 +10,8 @@ const ACTION_ICON: Record<string, string> = {
   "task.deleted": "🗑️",
   "team.created": "📋",
   "team.deleted": "🗑️",
+  "team.member_added": "👤",
+  "team.member_removed": "👤",
   "member.invited": "✉️",
   "custom_field.created": "🧩",
   "document.uploaded": "📁",

@@ -47,3 +47,13 @@ Migration 014 menambahkan template organisasi yang dapat dikelola melalui UI.
 
 ## Catatan Deployment
 Sebelum deploy, jalankan migration 013 dan 014 pada Supabase target. Setelah itu build/deploy menggunakan environment variable yang sesuai.
+
+## Wave 2 — Team Access & Activity Hardening (14 Aug 2026)
+
+- Added `supabase/migrations/015_team_access_and_activity_hardening.sql`.
+- Task RLS is now team-aware: tasks linked to a team are visible/editable only to that team's members or organization Owner/Manager.
+- Task creation also validates that an assignee belongs to the selected team (unless Owner/Manager).
+- Added activity log events for adding/removing team members.
+- Added activity log events for general task edits, assignee changes, and team changes.
+- This wave deliberately builds on the existing Activity Log, Notification, Team Membership, and Sector Configuration Engine rather than replacing them.
+- Full dependency-based typecheck could not be rerun in this clean ZIP extraction because `node_modules` is not present and package installation was unavailable in the current runtime. The changed TypeScript was reviewed and the migration is included for execution in Supabase.
