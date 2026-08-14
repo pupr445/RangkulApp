@@ -7,7 +7,18 @@ import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { logActivity } from "@/lib/data/activity-log";
 import { WorkflowStage } from "@/lib/data/workflows";
 
-const COLORS = ["#64748B", "#2563EB", "#7C3AED", "#D97706", "#DB2777", "#16A34A", "#0F766E"];
+const COLOR_OPTIONS = [
+  { value: "#64748B", name: "Abu-abu" },
+  { value: "#2563EB", name: "Biru" },
+  { value: "#0EA5E9", name: "Biru Langit" },
+  { value: "#7C3AED", name: "Ungu" },
+  { value: "#DB2777", name: "Merah Muda" },
+  { value: "#DC2626", name: "Merah" },
+  { value: "#D97706", name: "Oranye" },
+  { value: "#16A34A", name: "Hijau" },
+  { value: "#0F766E", name: "Teal" },
+  { value: "#92400E", name: "Cokelat" },
+];
 
 function keyFromLabel(label: string) {
   return label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32);
@@ -59,7 +70,6 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
       setError("Tahap dengan nama serupa sudah ada.");
       return;
     }
-    const previous = items[items.length - 1];
     setItems((prev) => {
       const updated = [...prev, { key, label: nextLabel, color: "#2563EB", initial: false, final: true, transitions: [] }];
       const beforeLast = updated[updated.length - 2];
@@ -166,9 +176,29 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
             <div className="flex gap-2 items-center">
               <div className="w-7 text-center text-xs font-bold text-inkMuted">{index + 1}</div>
               <input value={item.label} onChange={(e) => updateItem(index, { label: e.target.value })} className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface" />
-              <select value={item.color ?? "#2563EB"} onChange={(e) => updateItem(index, { color: e.target.value })} className="w-28 border border-border rounded-lg px-2 py-2 text-xs bg-surface">
-                {COLORS.map((color) => <option key={color} value={color}>{color}</option>)}
-              </select>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] text-inkMuted">Warna</span>
+                <div className="flex items-center gap-1.5" aria-label={`Pilih warna untuk ${item.label}`}>
+                  {COLOR_OPTIONS.map((color) => {
+                    const selected = (item.color ?? "#2563EB").toUpperCase() === color.value.toUpperCase();
+                    return (
+                      <button
+                        key={color.value}
+                        type="button"
+                        title={color.name}
+                        aria-label={`Warna ${color.name}`}
+                        aria-pressed={selected}
+                        onClick={() => updateItem(index, { color: color.value })}
+                        className="h-7 w-7 rounded-full border border-border transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1"
+                        style={{
+                          backgroundColor: color.value,
+                          boxShadow: selected ? `0 0 0 2px var(--surface), 0 0 0 4px ${color.value}` : undefined,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
               <button onClick={() => move(index, -1)} disabled={index === 0} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↑</button>
               <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↓</button>
               <button onClick={() => remove(index)} className="text-xs px-2 py-1 text-[#8A3E24]">Hapus</button>

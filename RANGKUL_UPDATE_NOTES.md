@@ -148,3 +148,10 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - Task Detail juga memvalidasi perubahan status terhadap transition rules.
 - New Task menggunakan initial workflow stage dan menampilkan warna status sesuai konfigurasi.
 - Tidak menambah migration database; konfigurasi tetap disimpan pada `organizations.workflow_stages` JSONB yang sudah tersedia.
+
+
+## Wave 7 Workflow UI Fix
+- Mengganti dropdown kode hex pada Workflow Manager menjadi palette warna visual.
+- Admin memilih warna dengan klik swatch; kode warna tidak ditampilkan sebagai input.
+- Setiap swatch memiliki nama, tooltip, dan state terpilih yang jelas.
+- Warna tetap disimpan sebagai nilai internal workflow agar konsisten dengan Kanban dan reporting.
