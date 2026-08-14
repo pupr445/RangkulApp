@@ -155,3 +155,16 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - Admin memilih warna dengan klik swatch; kode warna tidak ditampilkan sebagai input.
 - Setiap swatch memiliki nama, tooltip, dan state terpilih yang jelas.
 - Warna tetap disimpan sebagai nilai internal workflow agar konsisten dengan Kanban dan reporting.
+
+
+## Wave 7 UI refinement — compact workflow color picker
+- Mengganti palette warna inline pada setiap workflow stage menjadi tombol ikon warna kecil.
+- Palette dibuka sebagai popover saat ikon diklik, sehingga tidak lagi menambah lebar card workflow.
+- Popover tertutup setelah warna dipilih.
+- Kontrol stage dibuat wrap-friendly untuk layar desktop maupun sempit.
+
+
+## Workflow Save Feedback Fix
+- Menambahkan feedback visual saat menyimpan workflow: `Menyimpan…` → `✓ Workflow tersimpan` / `Tersimpan`.
+- Status tersimpan di-reset ketika ada perubahan workflow baru.
+- Error penyimpanan tetap ditampilkan dengan role alert.
