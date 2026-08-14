@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/data/activity-log";
 import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
 import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
+import { getInitialWorkflowStage, workflowStageColor } from "@/lib/data/workflows";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
@@ -37,7 +38,7 @@ export function NewTaskModal({
   const [title, setTitle] = useState("");
   const [tag, setTag] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState<string>(workflowStages[0]?.key ?? "todo");
+  const [status, setStatus] = useState<string>(getInitialWorkflowStage(workflowStages)?.key ?? "todo");
   const [assigneeId, setAssigneeId] = useState("");
   const [teamId, setTeamId] = useState("");
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
@@ -57,7 +58,7 @@ export function NewTaskModal({
     setTitle("");
     setTag("");
     setDueDate("");
-    setStatus(workflowStages[0]?.key ?? "todo");
+    setStatus(getInitialWorkflowStage(workflowStages)?.key ?? "todo");
     setAssigneeId("");
     setTeamId("");
     setCustomValues({});
@@ -222,7 +223,7 @@ export function NewTaskModal({
                   className="text-xs font-semibold px-3 py-1.5 rounded-full border transition"
                   style={
                     status === s.key
-                      ? { backgroundColor: labels.accentSoft, color: labels.accent, borderColor: labels.accent }
+                      ? { backgroundColor: `${workflowStageColor(workflowStages, s.key)}18`, color: workflowStageColor(workflowStages, s.key), borderColor: workflowStageColor(workflowStages, s.key) }
                       : { borderColor: "#DEE5E7", color: "#5C7079" }
                   }
                 >

@@ -138,3 +138,13 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - Menambahkan workload per tim dengan completion rate dan jumlah task terlambat.
 - Menambahkan filter laporan berdasarkan tim.
 - Tidak menambah migration database; fitur menggunakan data task, team, dan workflow yang sudah ada.
+
+
+## Wave 7 — Workflow Engine Strengthening
+- Workflow stage sekarang mendukung `color`, `initial`, `final`, dan `transitions`.
+- Workflow Builder memungkinkan mengatur warna tahap, tahap awal, tahap akhir, dan status tujuan yang diizinkan.
+- Validasi workflow menjaga tepat satu tahap awal, minimal satu tahap akhir, dan membersihkan transition yang tidak valid.
+- Board Kanban sekarang menghormati transition rules dan menolak perpindahan status yang tidak diizinkan.
+- Task Detail juga memvalidasi perubahan status terhadap transition rules.
+- New Task menggunakan initial workflow stage dan menampilkan warna status sesuai konfigurasi.
+- Tidak menambah migration database; konfigurasi tetap disimpan pada `organizations.workflow_stages` JSONB yang sudah tersedia.

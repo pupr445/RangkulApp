@@ -10,6 +10,7 @@ import { TeamOption } from "@/lib/data/teams";
 import { logActivity } from "@/lib/data/activity-log";
 import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
+import { canTransitionWorkflow, workflowStageColor } from "@/lib/data/workflows";
 
 export interface EditableTask {
   id: string;
@@ -85,6 +86,12 @@ export function TaskDetailModal({
 
     const statusChanged = status !== task.status;
     const assigneeChanged = assigneeId !== (task.assigneeId ?? "");
+
+    if (statusChanged && !canTransitionWorkflow(workflowStages, task.status, status)) {
+      setError(`Status tidak dapat dipindahkan dari ${workflowStages.find((s) => s.key === task.status)?.label ?? task.status} ke ${workflowStages.find((s) => s.key === status)?.label ?? status}.`);
+      setSaving(false);
+      return;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const client = supabase as any;
@@ -315,7 +322,7 @@ export function TaskDetailModal({
                   className="text-xs font-semibold px-3 py-1.5 rounded-full border transition"
                   style={
                     status === s.key
-                      ? { backgroundColor: labels.accentSoft, color: labels.accent, borderColor: labels.accent }
+                      ? { backgroundColor: `${workflowStageColor(workflowStages, s.key)}18`, color: workflowStageColor(workflowStages, s.key), borderColor: workflowStageColor(workflowStages, s.key) }
                       : { borderColor: "#DEE5E7", color: "#5C7079" }
                   }
                 >

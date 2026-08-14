@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
+import { canTransitionWorkflow, workflowStageColor } from "@/lib/data/workflows";
 import { BoardColumn } from "@/lib/data/sample-tasks";
 import { NewTaskModal } from "@/components/NewTaskModal";
 import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
@@ -40,6 +41,7 @@ export function Board({
 
   const [cols, setCols] = useState(columns);
   const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<EditableTask | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
@@ -57,6 +59,12 @@ export function Board({
 
   async function moveCard(cardId: string, fromColId: string, toColId: string) {
     if (isSample || !organizationId || fromColId === toColId) return;
+
+    if (!canTransitionWorkflow(workflowStages, fromColId, toColId)) {
+      setError(`Status tidak dapat dipindahkan dari ${workflowStages.find((s) => s.key === fromColId)?.label ?? fromColId} ke ${workflowStages.find((s) => s.key === toColId)?.label ?? toColId}.`);
+      return;
+    }
+    setError(null);
 
     // Update optimistis di UI dulu supaya terasa instan...
     setCols((prev) => {
@@ -89,6 +97,7 @@ export function Board({
 
   return (
     <main className="flex-1 p-6 md:p-8 min-w-0">
+      {error && <div className="mb-3 text-xs px-3 py-2 rounded-lg border border-[#F0B7A1] bg-[#FFF7F3] text-[#8A3E24]">{error}</div>}
       <div className="flex justify-between items-start gap-4 flex-wrap mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1">{title}</h1>

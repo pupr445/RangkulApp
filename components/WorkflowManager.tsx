@@ -7,8 +7,31 @@ import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { logActivity } from "@/lib/data/activity-log";
 import { WorkflowStage } from "@/lib/data/workflows";
 
+const COLORS = ["#64748B", "#2563EB", "#7C3AED", "#D97706", "#DB2777", "#16A34A", "#0F766E"];
+
 function keyFromLabel(label: string) {
   return label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 32);
+}
+
+function sanitizeStages(stages: WorkflowStage[]) {
+  const keys = new Set(stages.map((s) => s.key));
+  let initialAssigned = false;
+  const next = stages.map((s, i) => {
+    const initial = !initialAssigned && (s.initial || i === 0);
+    if (initial) initialAssigned = true;
+    const transitions = s.final ? [] : (s.transitions ?? []).filter((key) => keys.has(key) && key !== s.key);
+    return { ...s, initial, final: Boolean(s.final), transitions };
+  });
+  if (!next.some((s) => s.final)) next[next.length - 1].final = true;
+  next.forEach((s) => {
+    if (s.final) s.transitions = [];
+    if (!s.final && !s.transitions.length) {
+      const index = next.findIndex((x) => x.key === s.key);
+      const fallback = next[index + 1];
+      if (fallback) s.transitions = [fallback.key];
+    }
+  });
+  return next;
 }
 
 export function WorkflowManager({ organizationId, stages }: { organizationId: string; stages: WorkflowStage[] }) {
@@ -24,7 +47,7 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
   const canSave = useMemo(() => items.length >= 2 && items.every((x) => x.key && x.label), [items]);
 
   function updateItem(index: number, patch: Partial<WorkflowStage>) {
-    setItems((prev) => prev.map((x, i) => (i === index ? { ...x, ...patch } : x)));
+    setItems((prev) => sanitizeStages(prev.map((x, i) => (i === index ? { ...x, ...patch } : x))));
   }
 
   function addStage() {
@@ -36,7 +59,14 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
       setError("Tahap dengan nama serupa sudah ada.");
       return;
     }
-    setItems((prev) => [...prev, { key, label: nextLabel }]);
+    const previous = items[items.length - 1];
+    setItems((prev) => {
+      const updated = [...prev, { key, label: nextLabel, color: "#2563EB", initial: false, final: true, transitions: [] }];
+      const beforeLast = updated[updated.length - 2];
+      if (beforeLast) beforeLast.transitions = [key];
+      beforeLast.final = false;
+      return sanitizeStages(updated);
+    });
     setLabel("");
     setError(null);
   }
@@ -47,7 +77,7 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
     setItems((prev) => {
       const next = [...prev];
       [next[index], next[target]] = [next[target], next[index]];
-      return next;
+      return sanitizeStages(next);
     });
   }
 
@@ -56,16 +86,56 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
       setError("Workflow minimal memiliki 2 tahap.");
       return;
     }
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    setItems((prev) => {
+      const removed = prev[index];
+      const next = prev.filter((_, i) => i !== index);
+      const fallbackTarget = next[Math.min(index, next.length - 1)];
+      return sanitizeStages(next.map((s) => ({
+        ...s,
+        transitions: (s.transitions ?? []).filter((key) => key !== removed.key).length
+          ? (s.transitions ?? []).filter((key) => key !== removed.key)
+          : (fallbackTarget && s.key !== fallbackTarget.key && !s.final ? [fallbackTarget.key] : s.transitions),
+      })));
+    });
+  }
+
+  function toggleInitial(index: number) {
+    setItems((prev) => prev.map((s, i) => ({ ...s, initial: i === index })).map((s) => ({
+      ...s,
+      transitions: s.final ? [] : s.transitions,
+    })));
+  }
+
+  function toggleFinal(index: number) {
+    if (items.filter((s) => s.final).length === 1 && items[index].final) {
+      setError("Minimal satu tahap harus menjadi tahap akhir.");
+      return;
+    }
+    setItems((prev) => prev.map((s, i) => {
+      if (i !== index) return s;
+      return { ...s, final: !s.final, transitions: !s.final ? [] : s.transitions };
+    }));
+    setError(null);
+  }
+
+  function toggleTransition(fromIndex: number, toKey: string) {
+    if (fromIndex === items.findIndex((s) => s.key === toKey)) return;
+    setItems((prev) => prev.map((s, i) => {
+      if (i !== fromIndex) return s;
+      const current = s.transitions ?? [];
+      const transitions = current.includes(toKey) ? current.filter((x) => x !== toKey) : [...current, toKey];
+      return { ...s, transitions, final: transitions.length === 0 ? false : s.final };
+    }).map((s) => s.final ? { ...s, transitions: [] } : s));
   }
 
   async function save() {
     if (!canSave) return;
     setSaving(true);
     setError(null);
+    const payload = sanitizeStages(items);
     const { error: updateError } = await (supabase as any)
       .from("organizations")
-      .update({ workflow_stages: items })
+      .update({ workflow_stages: payload })
       .eq("id", organizationId);
     setSaving(false);
     if (updateError) {
@@ -80,6 +150,7 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
       targetType: "organization",
       targetId: organizationId,
       targetLabel: labels.sectorDisplayName,
+      detail: `${payload.length} tahap; initial=${payload.find((s) => s.initial)?.label ?? "-"}; final=${payload.filter((s) => s.final).map((s) => s.label).join(", ")}`,
     });
     router.refresh();
   }
@@ -87,22 +158,52 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
   return (
     <div className="bg-surface border border-border rounded-card p-5 mb-6">
       <h2 className="text-sm font-semibold mb-1">Workflow {labels.taskLabel}</h2>
-      <p className="text-xs text-inkMuted mb-4">Atur tahapan kerja yang benar-benar sesuai sektor organisasi. Task akan menggunakan tahap di bawah ini.</p>
-      <div className="space-y-2">
+      <p className="text-xs text-inkMuted mb-4">Bangun alur kerja sektor: nama, warna, tahap awal/akhir, dan status yang boleh dituju.</p>
+
+      <div className="space-y-3">
         {items.map((item, index) => (
-          <div key={item.key} className="flex gap-2 items-center border border-border rounded-lg p-2">
-            <div className="w-7 text-center text-xs font-bold text-inkMuted">{index + 1}</div>
-            <input value={item.label} onChange={(e) => updateItem(index, { label: e.target.value })} className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface" />
-            <button onClick={() => move(index, -1)} disabled={index === 0} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↑</button>
-            <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↓</button>
-            <button onClick={() => remove(index)} className="text-xs px-2 py-1 text-[#8A3E24]">Hapus</button>
+          <div key={item.key} className="border border-border rounded-lg p-3">
+            <div className="flex gap-2 items-center">
+              <div className="w-7 text-center text-xs font-bold text-inkMuted">{index + 1}</div>
+              <input value={item.label} onChange={(e) => updateItem(index, { label: e.target.value })} className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface" />
+              <select value={item.color ?? "#2563EB"} onChange={(e) => updateItem(index, { color: e.target.value })} className="w-28 border border-border rounded-lg px-2 py-2 text-xs bg-surface">
+                {COLORS.map((color) => <option key={color} value={color}>{color}</option>)}
+              </select>
+              <button onClick={() => move(index, -1)} disabled={index === 0} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↑</button>
+              <button onClick={() => move(index, 1)} disabled={index === items.length - 1} className="text-xs px-2 py-1 border border-border rounded disabled:opacity-30">↓</button>
+              <button onClick={() => remove(index)} className="text-xs px-2 py-1 text-[#8A3E24]">Hapus</button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3 ml-7">
+              <button onClick={() => toggleInitial(index)} className={`text-[11px] px-2 py-1 rounded-full border ${item.initial ? "font-bold" : ""}`} style={item.initial ? { borderColor: item.color, color: item.color } : undefined}>
+                {item.initial ? "✓ " : ""}Tahap awal
+              </button>
+              <button onClick={() => toggleFinal(index)} className={`text-[11px] px-2 py-1 rounded-full border ${item.final ? "font-bold" : ""}`} style={item.final ? { borderColor: item.color, color: item.color } : undefined}>
+                {item.final ? "✓ " : ""}Tahap akhir
+              </button>
+            </div>
+
+            {!item.final && (
+              <div className="mt-3 ml-7">
+                <p className="text-[11px] font-semibold text-inkMuted mb-1">Boleh berpindah ke:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {items.filter((target) => target.key !== item.key).map((target) => (
+                    <button key={target.key} onClick={() => toggleTransition(index, target.key)} className={`text-[11px] px-2 py-1 rounded-full border ${item.transitions?.includes(target.key) ? "font-semibold" : "text-inkMuted"}`} style={item.transitions?.includes(target.key) ? { borderColor: target.color, color: target.color } : undefined}>
+                      {item.transitions?.includes(target.key) ? "✓ " : ""}{target.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
+
       <div className="flex gap-2 mt-3">
         <input value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addStage(); }} placeholder="Tambah tahap, mis. Menunggu Hasil" className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-surface" />
         <button onClick={addStage} className="border border-border rounded-lg px-4 py-2 text-sm font-semibold">+ Tahap</button>
       </div>
+
       {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
       <div className="flex justify-end mt-4">
         <button onClick={save} disabled={saving || !canSave} className="text-white rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-40" style={{ backgroundColor: labels.accent }}>
