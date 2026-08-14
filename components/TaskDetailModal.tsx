@@ -129,6 +129,7 @@ export function TaskDetailModal({
         targetType: "task",
         targetId: task.id,
         targetLabel: title.trim(),
+        teamId: teamId || task.teamId || null,
       });
     }
 
@@ -142,6 +143,7 @@ export function TaskDetailModal({
         targetType: "task",
         targetId: task.id,
         targetLabel: title.trim(),
+        teamId: teamId || task.teamId || null,
         detail: `menjadi ${members.find((m) => m.id === assigneeId)?.name ?? "Belum ditentukan"}`,
       });
     }
@@ -156,6 +158,7 @@ export function TaskDetailModal({
         targetType: "task",
         targetId: task.id,
         targetLabel: title.trim(),
+        teamId: teamId || null,
         detail: `ke ${teams.find((t) => t.id === teamId)?.name ?? "tanpa tim"}`,
       });
     }
@@ -232,6 +235,7 @@ export function TaskDetailModal({
       targetType: "task",
       targetId: null,
       targetLabel: task.title,
+      teamId: task.teamId || null,
     });
 
     onClose();

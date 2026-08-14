@@ -70,6 +70,7 @@ export type Database = {
       custom_fields: LooseTable;
       messages: LooseTable;
       activity_logs: LooseTable;
+      security_audit_logs: LooseTable;
       notifications: NotificationsTable;
       documents: LooseTable;
       invitations: LooseTable;

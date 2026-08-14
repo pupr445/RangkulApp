@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
+import { createClient } from "@/lib/supabase/client";
+import { logActivity, logSecurityAudit } from "@/lib/data/activity-log";
 
 export interface MemberRow {
   id: string;
@@ -34,6 +36,7 @@ export function TeamManager({
   const labels = useLabels();
   const canManage = useCanManage();
   const router = useRouter();
+  const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"manager" | "member">("member");
@@ -76,6 +79,31 @@ export function TeamManager({
 
     setLastResult({ email: trimmed, emailSent: Boolean(body?.emailSent) });
     setEmail("");
+    const { data: auth } = await supabase.auth.getUser();
+    const actorName =
+      (auth?.user?.user_metadata?.full_name as string | undefined) ??
+      auth?.user?.email?.split("@")[0] ??
+      "Seseorang";
+    logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName,
+      action: "member.invited",
+      targetType: "member",
+      targetId: null,
+      targetLabel: trimmed,
+      detail: `role ${role}`,
+    });
+    logSecurityAudit(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName,
+      action: "member.invited",
+      targetType: "member",
+      targetId: null,
+      targetLabel: trimmed,
+      detail: `role ${role}`,
+    });
     router.refresh();
   }
 

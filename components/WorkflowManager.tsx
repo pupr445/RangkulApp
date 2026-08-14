@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
-import { logActivity } from "@/lib/data/activity-log";
+import { logActivity, logSecurityAudit } from "@/lib/data/activity-log";
 import { WorkflowStage } from "@/lib/data/workflows";
 
 const COLOR_OPTIONS = [
@@ -170,6 +170,16 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
     }
     setSaved(true);
     logActivity(supabase, {
+      organizationId,
+      actorId: currentUserId,
+      actorName: "Admin",
+      action: "workflow.updated",
+      targetType: "organization",
+      targetId: organizationId,
+      targetLabel: labels.sectorDisplayName,
+      detail: `${payload.length} tahap; initial=${payload.find((s) => s.initial)?.label ?? "-"}; final=${payload.filter((s) => s.final).map((s) => s.label).join(", ")}`,
+    });
+    logSecurityAudit(supabase, {
       organizationId,
       actorId: currentUserId,
       actorName: "Admin",

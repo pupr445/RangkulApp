@@ -112,6 +112,7 @@ export function NewTaskModal({
         targetType: "task",
         targetId: (inserted as { id: string } | null)?.id ?? null,
         targetLabel: title.trim(),
+        teamId: teamId || null,
       });
 
       if (assigneeId) {

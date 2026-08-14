@@ -168,3 +168,21 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - Menambahkan feedback visual saat menyimpan workflow: `Menyimpan…` → `✓ Workflow tersimpan` / `Tersimpan`.
 - Status tersimpan di-reset ketika ada perubahan workflow baru.
 - Error penyimpanan tetap ditampilkan dengan role alert.
+
+
+## Wave 8 — Activity & Security Audit System
+- Memisahkan Activity Log operasional dan Security Audit.
+- Menambahkan `team_id` pada `activity_logs` untuk filtering berbasis tim.
+- Menambahkan tabel `security_audit_logs` dengan RLS: hanya Owner/Manager yang dapat membaca/menulis audit.
+- Menambahkan filtering Activity: target type, anggota, tim, tanggal mulai/akhir.
+- Menambahkan filtering Security Audit: aksi, anggota, tim, tanggal.
+- Menambahkan tab `Audit Keamanan` pada halaman Aktivitas untuk Owner/Manager.
+- Menambahkan audit untuk invitation, perubahan membership tim, workflow update, dan template create/apply.
+- Menambahkan index Activity/Audit untuk organisasi, actor, team, target/action.
+- Migration baru: `018_activity_audit_system.sql`.
+- Full typecheck/build belum diverifikasi di environment ini karena dependency lokal tidak lengkap; source sudah diperiksa secara struktural.
+
+
+## Wave 8 — Typecheck Hotfix
+- Memperbaiki typing `organization_members` pada Activity page agar tidak menghasilkan `never`.
+- Menghapus property `teamId` duplikat pada TeamsManager.

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLabels, useCurrentUserId } from "@/lib/labels/LabelProvider";
 import { TeamOption } from "@/lib/data/teams";
 import { MemberOption } from "@/lib/data/members";
-import { logActivity } from "@/lib/data/activity-log";
+import { logActivity, logSecurityAudit } from "@/lib/data/activity-log";
 
 export function TeamsManager({
   organizationId,
@@ -117,6 +117,29 @@ export function TeamsManager({
           targetType: "team",
           targetId: teamId,
           targetLabel: targetTeam?.name ?? null,
+          teamId,
+          detail: `anggota ${targetMember?.name ?? "pengguna"}`,
+        });
+        logSecurityAudit(supabase, {
+          organizationId,
+          actorId: currentUserId,
+          actorName,
+          action: "team.member_added",
+          targetType: "team",
+          targetId: teamId,
+          targetLabel: targetTeam?.name ?? null,
+          teamId,
+          detail: `anggota ${targetMember?.name ?? "pengguna"}`,
+        });
+        logSecurityAudit(supabase, {
+          organizationId,
+          actorId: currentUserId,
+          actorName,
+          action: "team.member_removed",
+          targetType: "team",
+          targetId: teamId,
+          targetLabel: targetTeam?.name ?? null,
+          teamId,
           detail: `anggota ${targetMember?.name ?? "pengguna"}`,
         });
       }

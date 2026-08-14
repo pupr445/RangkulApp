@@ -7,7 +7,7 @@ import { useCurrentUserId, useLabels } from "@/lib/labels/LabelProvider";
 import { OrganizationTemplate } from "@/lib/data/templates";
 import { WorkflowStage } from "@/lib/data/workflows";
 import { CustomFieldDef, slugifyFieldKey } from "@/lib/data/custom-fields";
-import { logActivity } from "@/lib/data/activity-log";
+import { logActivity, logSecurityAudit } from "@/lib/data/activity-log";
 
 export function TemplateManager({ organizationId, templates, workflowStages, teams, fields }: {
   organizationId: string;
@@ -48,6 +48,7 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
     setSaving(false);
     if (e) { setError(e.message); return; }
     logActivity(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.created", targetType: "template", targetId: null, targetLabel: trimmed });
+    logSecurityAudit(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.created", targetType: "template", targetId: null, targetLabel: trimmed });
     setName(""); router.refresh();
   }
 
@@ -86,6 +87,7 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
         if (error) throw new Error(error.message);
       }
       logActivity(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.applied", targetType: "template", targetId: t.id, targetLabel: t.name });
+      logSecurityAudit(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.applied", targetType: "template", targetId: t.id, targetLabel: t.name });
       router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal menerapkan template."); }
     setSaving(false);

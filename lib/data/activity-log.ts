@@ -25,6 +25,20 @@ export interface ActivityLogEntry {
   target_type: string | null;
   target_id: string | null;
   target_label: string | null;
+  team_id: string | null;
+  detail: string | null;
+  created_at: string;
+}
+
+export interface SecurityAuditEntry {
+  id: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  target_label: string | null;
+  team_id: string | null;
   detail: string | null;
   created_at: string;
 }
@@ -50,6 +64,7 @@ export function logActivity(
     targetType?: string;
     targetId?: string | null;
     targetLabel?: string | null;
+    teamId?: string | null;
     detail?: string | null;
   }
 ) {
@@ -76,17 +91,20 @@ export function logActivity(
 export async function fetchActivityLog(
   supabase: any,
   organizationId: string,
-  opts: { limit?: number; targetType?: string; actorId?: string } = {}
+  opts: { limit?: number; targetType?: string; actorId?: string; teamId?: string; fromDate?: string; toDate?: string } = {}
 ): Promise<ActivityLogEntry[]> {
   let query = supabase
     .from("activity_logs")
-    .select("id, actor_id, actor_name, action, target_type, target_id, target_label, detail, created_at")
+    .select("id, actor_id, actor_name, action, target_type, target_id, target_label, team_id, detail, created_at")
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
     .limit(opts.limit ?? 100);
 
   if (opts.targetType) query = query.eq("target_type", opts.targetType);
   if (opts.actorId) query = query.eq("actor_id", opts.actorId);
+  if (opts.teamId) query = query.eq("team_id", opts.teamId);
+  if (opts.fromDate) query = query.gte("created_at", `${opts.fromDate}T00:00:00`);
+  if (opts.toDate) query = query.lte("created_at", `${opts.toDate}T23:59:59.999`);
 
   const { data, error } = await query;
   if (error) {
@@ -133,4 +151,66 @@ export function describeActivity(entry: ActivityLogEntry): string {
   const label = entry.target_label ? ` "${entry.target_label}"` : "";
   const detail = entry.detail ? ` ${entry.detail}` : "";
   return `${actor} ${verb} ${noun}${label}${detail}`.replace(/\s+/g, " ").trim();
+}
+
+
+// Catatan security-sensitive, hanya untuk Owner/Manager (RLS menegakkan izin insert).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function logSecurityAudit(
+  supabase: any,
+  params: {
+    organizationId: string;
+    actorId: string;
+    actorName: string;
+    action: string;
+    targetType?: string;
+    targetId?: string | null;
+    targetLabel?: string | null;
+    teamId?: string | null;
+    detail?: string | null;
+  }
+) {
+  supabase
+    .from("security_audit_logs")
+    .insert([{
+      organization_id: params.organizationId,
+      actor_id: params.actorId,
+      actor_name: params.actorName,
+      action: params.action,
+      target_type: params.targetType ?? null,
+      target_id: params.targetId ?? null,
+      target_label: params.targetLabel ?? null,
+      team_id: params.teamId ?? null,
+      detail: params.detail ?? null,
+    }])
+    .then(({ error }: { error: { message: string } | null }) => {
+      if (error) console.error("logSecurityAudit gagal:", error.message);
+    });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function fetchSecurityAuditLog(
+  supabase: any,
+  organizationId: string,
+  opts: { limit?: number; actorId?: string; action?: string; teamId?: string; fromDate?: string; toDate?: string } = {}
+): Promise<SecurityAuditEntry[]> {
+  let query = supabase
+    .from("security_audit_logs")
+    .select("id, actor_id, actor_name, action, target_type, target_id, target_label, team_id, detail, created_at")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(opts.limit ?? 200);
+
+  if (opts.actorId) query = query.eq("actor_id", opts.actorId);
+  if (opts.action) query = query.eq("action", opts.action);
+  if (opts.teamId) query = query.eq("team_id", opts.teamId);
+  if (opts.fromDate) query = query.gte("created_at", `${opts.fromDate}T00:00:00`);
+  if (opts.toDate) query = query.lte("created_at", `${opts.toDate}T23:59:59.999`);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("fetchSecurityAuditLog gagal:", error.message);
+    return [];
+  }
+  return (data as SecurityAuditEntry[] | null) ?? [];
 }
