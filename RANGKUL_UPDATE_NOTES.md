@@ -130,3 +130,11 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - Halaman login membaca parameter email dari link undangan dan menampilkan instruksi agar penerima menggunakan akun Google yang sesuai.
 - Tidak menambah migration database karena pendekatan ini memakai invitation yang sudah ada; penerimaan tetap menggunakan mekanisme auto-join berbasis email yang sudah berjalan.
 \n\n## Wave 5 Hotfix — Login Suspense\n- Memisahkan /login menjadi Server Component wrapper + Client Component.\n- useSearchParams sekarang berjalan di bawah React Suspense agar production prerender tidak gagal.\n- UI/auth flow tetap di login-client.tsx dengan "use client".\n
+
+## Wave 6 — Advanced Reporting & Team Insights
+- Menambahkan `components/ReportsInsights.tsx`.
+- Laporan sekarang memiliki insight distribusi workflow per tahap.
+- Menambahkan kesehatan tenggat: terlambat, jatuh tempo hari ini, dan tanpa tenggat.
+- Menambahkan workload per tim dengan completion rate dan jumlah task terlambat.
+- Menambahkan filter laporan berdasarkan tim.
+- Tidak menambah migration database; fitur menggunakan data task, team, dan workflow yang sudah ada.

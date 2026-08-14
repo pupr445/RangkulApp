@@ -4,6 +4,8 @@ import { fetchMemberOptions } from "@/lib/data/members";
 import { getLabels } from "@/lib/labels/sectors";
 import { ExportButton } from "@/components/ExportButton";
 import { normalizeWorkflowStages } from "@/lib/data/workflows";
+import { fetchTeams } from "@/lib/data/teams";
+import { ReportsInsights } from "@/components/ReportsInsights";
 
 export const runtime = "edge";
 
@@ -34,6 +36,7 @@ export default async function ReportsPage() {
       )
     : [];
   const memberMap = new Map(members.map((m) => [m.id, m.name]));
+  const teams = org ? await fetchTeams(supabase, org.id) : [];
 
   if (org) {
     const { data } = await supabase
@@ -125,6 +128,16 @@ export default async function ReportsPage() {
           />
         </div>
       </div>
+
+      {!isSample && (
+        <ReportsInsights
+          tasks={tasks}
+          teams={teams}
+          stages={workflowStages}
+          finalStageKey={finalStageKey}
+          accent={labels.accent}
+        />
+      )}
 
       {/* Kinerja per anggota */}
       <div className="bg-surface border border-border rounded-card p-5 mb-8">
