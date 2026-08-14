@@ -66,9 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Organisasi tidak ditemukan." }, { status: 404 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = supabase as any;
-  const { error: upsertError } = await client
+  const { error: upsertError } = await supabase
     .from("invitations")
     .upsert(
       { organization_id: org.id, email, role, accepted: false, invited_by: user.id },
@@ -82,7 +80,7 @@ export async function POST(request: Request) {
   const inviterName =
     (user.user_metadata?.full_name as string | undefined) ?? user.email?.split("@")[0] ?? "Seseorang";
 
-  await client.from("activity_logs").insert([
+  await supabase.from("activity_logs").insert([
     {
       organization_id: org.id,
       actor_id: user.id,

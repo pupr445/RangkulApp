@@ -44,11 +44,11 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
         date_max: f.date_max ?? null,
       })),
     };
-    const { error: e } = await (supabase as any).from("organization_templates").insert([payload]);
+    const { error: e } = await supabase.from("organization_templates").insert([payload]);
     setSaving(false);
     if (e) { setError(e.message); return; }
     logActivity(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.created", targetType: "template", targetId: null, targetLabel: trimmed });
-    logSecurityAudit(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.created", targetType: "template", targetId: null, targetLabel: trimmed });
+    logSecurityAudit({ organizationId, actorId: userId, actorName: "Admin", action: "template.created", targetType: "template", targetId: null, targetLabel: trimmed });
     setName(""); router.refresh();
   }
 
@@ -56,21 +56,20 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
     if (!confirm(`Terapkan template "${t.name}"? Workflow akan diganti dan tim/field yang belum ada akan ditambahkan.`)) return;
     setSaving(true); setError(null);
     try {
-      const client = supabase as any;
-      const { error: orgError } = await client.from("organizations").update({ workflow_stages: t.workflow_stages }).eq("id", organizationId);
+      const { error: orgError } = await supabase.from("organizations").update({ workflow_stages: t.workflow_stages }).eq("id", organizationId);
       if (orgError) throw new Error(orgError.message);
       for (const teamName of t.team_names) {
         if (!teamName.trim()) continue;
         const exists = teams.some((team) => team.name.toLowerCase() === teamName.toLowerCase());
         if (!exists) {
-          const { error } = await client.from("teams").insert([{ organization_id: organizationId, name: teamName.trim() }]);
+          const { error } = await supabase.from("teams").insert([{ organization_id: organizationId, name: teamName.trim() }]);
           if (error) throw new Error(error.message);
         }
       }
       for (const f of t.custom_fields) {
         const key = slugifyFieldKey(f.field_label);
         if (!key || fields.some((x) => x.field_key === key)) continue;
-        const { error } = await client.from("custom_fields").insert([{
+        const { error } = await supabase.from("custom_fields").insert([{
           organization_id: organizationId,
           entity: "task",
           field_key: key,
@@ -87,7 +86,7 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
         if (error) throw new Error(error.message);
       }
       logActivity(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.applied", targetType: "template", targetId: t.id, targetLabel: t.name });
-      logSecurityAudit(supabase, { organizationId, actorId: userId, actorName: "Admin", action: "template.applied", targetType: "template", targetId: t.id, targetLabel: t.name });
+      logSecurityAudit({ organizationId, actorId: userId, actorName: "Admin", action: "template.applied", targetType: "template", targetId: t.id, targetLabel: t.name });
       router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal menerapkan template."); }
     setSaving(false);
@@ -95,7 +94,7 @@ export function TemplateManager({ organizationId, templates, workflowStages, tea
 
   async function removeTemplate(t: OrganizationTemplate) {
     if (!confirm(`Hapus template "${t.name}"?`)) return;
-    await (supabase as any).from("organization_templates").delete().eq("id", t.id).eq("organization_id", organizationId);
+    await supabase.from("organization_templates").delete().eq("id", t.id).eq("organization_id", organizationId);
     router.refresh();
   }
 

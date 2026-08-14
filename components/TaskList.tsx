@@ -48,9 +48,7 @@ export function TaskList({
 
   async function quickChangeStatus(taskId: string, status: FlatTask["status"]) {
     if (isSample || !organizationId) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    await client.from("tasks").update({ status }).eq("id", taskId).eq("organization_id", organizationId);
+    await supabase.from("tasks").update({ status }).eq("id", taskId).eq("organization_id", organizationId);
     router.refresh();
   }
 

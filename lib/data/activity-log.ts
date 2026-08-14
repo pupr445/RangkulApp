@@ -154,10 +154,17 @@ export function describeActivity(entry: ActivityLogEntry): string {
 }
 
 
-// Catatan security-sensitive, hanya untuk Owner/Manager (RLS menegakkan izin insert).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Catatan security-sensitive. Ditulis lewat endpoint server (/api/audit-log)
+// yang memakai service role, BUKAN langsung dari client — supaya penulisan
+// audit trail tidak bisa gagal diam-diam hanya karena RLS menolak sesi
+// client saat itu. Endpoint server sendiri yang memverifikasi identitas
+// pemanggil sebelum menulis.
+//
+// Fire-and-forget yang disengaja (tidak di-await oleh pemanggil), tapi
+// kegagalannya tetap dilaporkan lewat onError — pemanggil BOLEH mengabaikan
+// onError untuk aksi non-kritis, tapi setidaknya tersedia alih-alih hanya
+// console.error yang tidak pernah terlihat siapa pun di production.
 export function logSecurityAudit(
-  supabase: any,
   params: {
     organizationId: string;
     actorId: string;
@@ -168,23 +175,23 @@ export function logSecurityAudit(
     targetLabel?: string | null;
     teamId?: string | null;
     detail?: string | null;
-  }
+  },
+  onError?: (message: string) => void
 ) {
-  supabase
-    .from("security_audit_logs")
-    .insert([{
-      organization_id: params.organizationId,
-      actor_id: params.actorId,
-      actor_name: params.actorName,
-      action: params.action,
-      target_type: params.targetType ?? null,
-      target_id: params.targetId ?? null,
-      target_label: params.targetLabel ?? null,
-      team_id: params.teamId ?? null,
-      detail: params.detail ?? null,
-    }])
-    .then(({ error }: { error: { message: string } | null }) => {
-      if (error) console.error("logSecurityAudit gagal:", error.message);
+  fetch("/api/audit-log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+    })
+    .catch((err: Error) => {
+      console.error("logSecurityAudit gagal:", err.message);
+      onError?.(err.message);
     });
 }
 

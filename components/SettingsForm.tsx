@@ -26,9 +26,7 @@ export function SettingsForm({
     setSaving(true);
     setSaved(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    await client
+    await supabase
       .from("organizations")
       .update({ name: name.trim(), sector_type: sector })
       .eq("id", organizationId);

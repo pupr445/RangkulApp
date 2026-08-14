@@ -88,8 +88,7 @@ export function NewTaskModal({
           team_id: teamId || null,
           custom_data: customValues,
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ] as any)
+      ])
       .select("id")
       .single();
 

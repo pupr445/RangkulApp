@@ -63,13 +63,12 @@ export function CustomFieldsManager({ organizationId, fields }: { organizationId
     setSaving(true); setError(null);
     try {
       const x = parseDraft();
-      const client = supabase as any;
       if (editingId) {
-        const { error: e } = await client.from("custom_fields").update({ field_label: x.trimmed, field_key: x.key, field_type: draft.type, field_options: x.options, is_required: draft.required, number_min: x.numberMin, number_max: x.numberMax, date_min: x.dateMin, date_max: x.dateMax }).eq("id", editingId).eq("organization_id", organizationId);
+        const { error: e } = await supabase.from("custom_fields").update({ field_label: x.trimmed, field_key: x.key, field_type: draft.type, field_options: x.options, is_required: draft.required, number_min: x.numberMin, number_max: x.numberMax, date_min: x.dateMin, date_max: x.dateMax }).eq("id", editingId).eq("organization_id", organizationId);
         if (e) throw new Error(e.message);
       } else {
         const maxOrder = fields.reduce((m, f) => Math.max(m, f.sort_order ?? 0), -1);
-        const { error: e } = await client.from("custom_fields").insert([{ organization_id: organizationId, entity: "task", field_key: x.key, field_label: x.trimmed, field_type: draft.type, field_options: x.options, is_required: draft.required, number_min: x.numberMin, number_max: x.numberMax, date_min: x.dateMin, date_max: x.dateMax, sort_order: maxOrder + 1 }]);
+        const { error: e } = await supabase.from("custom_fields").insert([{ organization_id: organizationId, entity: "task", field_key: x.key, field_label: x.trimmed, field_type: draft.type, field_options: x.options, is_required: draft.required, number_min: x.numberMin, number_max: x.numberMax, date_min: x.dateMin, date_max: x.dateMax, sort_order: maxOrder + 1 }]);
         if (e) throw new Error(e.message);
       }
       const { data: u } = await supabase.auth.getUser();
@@ -88,10 +87,9 @@ export function CustomFieldsManager({ organizationId, fields }: { organizationId
   async function reorder(index: number, direction: -1 | 1) {
     const next = index + direction; if (next < 0 || next >= fields.length) return;
     const a = fields[index], b = fields[next];
-    const client = supabase as any;
     await Promise.all([
-      client.from("custom_fields").update({ sort_order: b.sort_order ?? next }).eq("id", a.id),
-      client.from("custom_fields").update({ sort_order: a.sort_order ?? index }).eq("id", b.id),
+      supabase.from("custom_fields").update({ sort_order: b.sort_order ?? next }).eq("id", a.id),
+      supabase.from("custom_fields").update({ sort_order: a.sort_order ?? index }).eq("id", b.id),
     ]);
     router.refresh();
   }

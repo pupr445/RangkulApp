@@ -72,9 +72,7 @@ export function LabelOverridesManager({
     setError(null);
     setSaved(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    const { error: updateError } = await client
+    const { error: updateError } = await supabase
       .from("organizations")
       .update({ label_overrides: values })
       .eq("id", organizationId);

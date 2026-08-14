@@ -186,3 +186,10 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 ## Wave 8 — Typecheck Hotfix
 - Memperbaiki typing `organization_members` pada Activity page agar tidak menghasilkan `never`.
 - Menghapus property `teamId` duplikat pada TeamsManager.
+
+## Wave 8 — Perbaikan Menyeluruh (bukan tambal `as any`)
+- Upgrade `@supabase/ssr` dari `^0.5.2` ke `^0.12.4`. Root cause bug "Argument of type ... not assignable to type 'never'" adalah ketidakcocokan versi generic antara `@supabase/ssr` lama dan `@supabase/supabase-js` baru (2.112.x) — BUKAN kesalahan tipe `Database` di project ini.
+- Menghapus SEMUA workaround `as any`/`(supabase as any)` di 15 file (app/api/invite, app/onboarding, TaskDetailModal, TeamsManager, Chat, WorkflowManager, SettingsForm, LabelOverridesManager, TemplateManager, Board, NotificationBell, TaskList, CustomFieldsManager, NewTaskModal, lib/data/org.ts). Type-safety penuh untuk semua operasi tulis Supabase kembali aktif.
+- `logSecurityAudit` dipindahkan dari insert langsung di client menjadi endpoint server baru `POST /api/audit-log` yang memakai service role (`createAdminClient`). Endpoint ini memverifikasi sesi login dan keanggotaan organisasi sebelum menulis, sehingga baris audit tidak lagi bisa gagal diam-diam hanya karena sesi client tidak lolos RLS `security_audit_insert_managers`.
+- Semua pemanggil `logSecurityAudit(...)` diperbarui: parameter `supabase` di awal dihapus (tidak diperlukan lagi karena penulisan sekarang lewat fetch ke endpoint server, bukan client Supabase langsung).
+- Diverifikasi ulang: `npm run typecheck` lolos bersih tanpa `as any`, `npm run build` berhasil compile (gagal prerender `/login` di lingkungan tanpa `.env` adalah perilaku yang sudah diketahui, bukan regresi).

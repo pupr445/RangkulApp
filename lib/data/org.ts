@@ -88,9 +88,7 @@ export async function getCurrentOrg() {
     if (invite) {
       const inv = invite as { organization_id: string; role: string };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const client = supabase as any;
-      await client.from("organization_members").insert([
+      await supabase.from("organization_members").insert([
         {
           organization_id: inv.organization_id,
           user_id: user.id,
@@ -99,7 +97,7 @@ export async function getCurrentOrg() {
             (user.user_metadata?.full_name as string | undefined) ?? email.split("@")[0],
         },
       ]);
-      await client
+      await supabase
         .from("invitations")
         .update({ accepted: true })
         .eq("organization_id", inv.organization_id)

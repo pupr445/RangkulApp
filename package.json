@@ -14,7 +14,7 @@
     "deadline-reminder:deploy": "wrangler deploy --config wrangler.deadline-reminder.toml"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.45.4",
     "clsx": "^2.1.1",
     "next": "^15.0.3",

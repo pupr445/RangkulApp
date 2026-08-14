@@ -114,9 +114,7 @@ export function Chat({
   // Tandai percakapan aktif sebagai "sudah dibaca", dan ambil status baca
   // lawan bicara (khusus DM) untuk indikator centang biru.
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    client
+    supabase
       .from("message_reads")
       .upsert(
         [{ organization_id: organizationId, user_id: currentUserId, conversation_key: conversationKey, last_read_at: new Date().toISOString() }],
@@ -125,7 +123,7 @@ export function Chat({
       .then(() => {});
 
     if (isDM) {
-      client
+      supabase
         .from("message_reads")
         .select("last_read_at")
         .eq("user_id", activeConvo)
@@ -151,9 +149,7 @@ export function Chat({
     setDraft("");
     setMentionQuery(null);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    const { error } = await client.from("messages").insert([
+    const { error } = await supabase.from("messages").insert([
       {
         organization_id: organizationId,
         sender_id: currentUserId,

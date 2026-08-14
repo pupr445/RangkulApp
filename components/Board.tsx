@@ -80,9 +80,7 @@ export function Board({
     });
 
     // ...lalu simpan ke database. Kolom "todo"/"doing"/"done" = nilai kolom `status`.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    const { error } = await client
+    const { error } = await supabase
       .from("tasks")
       .update({ status: toColId })
       .eq("id", cardId)

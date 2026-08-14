@@ -36,9 +36,7 @@ export function TeamsManager({
     setSaving(true);
     setError(null);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    const { data: inserted, error: insertError } = await client
+    const { data: inserted, error: insertError } = await supabase
       .from("teams")
       .insert([{ organization_id: organizationId, name: trimmed }])
       .select("id")
@@ -93,8 +91,6 @@ export function TeamsManager({
 
   async function handleToggleMembership(teamId: string, userId: string, isMember: boolean) {
     setTogglingMemberId(userId);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
 
     const targetTeam = teams.find((t) => t.id === teamId);
     const targetMember = orgMembers.find((m) => m.id === userId);
@@ -106,7 +102,7 @@ export function TeamsManager({
       "Seseorang";
 
     if (isMember) {
-      const { error } = await client.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
+      const { error } = await supabase.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
       if (error) setError(error.message);
       else {
         logActivity(supabase, {
@@ -120,7 +116,7 @@ export function TeamsManager({
           teamId,
           detail: `anggota ${targetMember?.name ?? "pengguna"}`,
         });
-        logSecurityAudit(supabase, {
+        logSecurityAudit({
           organizationId,
           actorId: currentUserId,
           actorName,
@@ -131,7 +127,7 @@ export function TeamsManager({
           teamId,
           detail: `anggota ${targetMember?.name ?? "pengguna"}`,
         });
-        logSecurityAudit(supabase, {
+        logSecurityAudit({
           organizationId,
           actorId: currentUserId,
           actorName,
@@ -144,7 +140,7 @@ export function TeamsManager({
         });
       }
     } else {
-      const { error } = await client
+      const { error } = await supabase
         .from("team_members")
         .insert([{ organization_id: organizationId, team_id: teamId, user_id: userId }]);
       if (error) setError(error.message);

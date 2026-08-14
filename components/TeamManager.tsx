@@ -94,7 +94,7 @@ export function TeamManager({
       targetLabel: trimmed,
       detail: `role ${role}`,
     });
-    logSecurityAudit(supabase, {
+    logSecurityAudit({
       organizationId,
       actorId: currentUserId,
       actorName,

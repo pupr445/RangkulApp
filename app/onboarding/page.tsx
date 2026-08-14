@@ -59,9 +59,7 @@ export default function OnboardingPage() {
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    client
+    supabase
       .from("sector_templates")
       .select("default_structure")
       .eq("sector_type", selected)

@@ -93,9 +93,7 @@ export function TaskDetailModal({
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    const { error: updateError } = await client
+    const { error: updateError } = await supabase
       .from("tasks")
       .update({
         title: title.trim(),

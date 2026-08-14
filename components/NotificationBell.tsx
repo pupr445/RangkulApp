@@ -60,9 +60,7 @@ export function NotificationBell({ organizationId }: { organizationId: string })
   async function markAsRead(ids: string[]) {
     if (ids.length === 0) return;
     setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, is_read: true } : n)));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const client = supabase as any;
-    await client.from("notifications").update({ is_read: true }).in("id", ids);
+    await supabase.from("notifications").update({ is_read: true }).in("id", ids);
   }
 
   function handleClickItem(n: NotificationRow) {

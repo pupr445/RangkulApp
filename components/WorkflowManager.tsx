@@ -158,7 +158,7 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
     setSaved(false);
     setError(null);
     const payload = sanitizeStages(items);
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from("organizations")
       .update({ workflow_stages: payload })
       .eq("id", organizationId);
@@ -179,7 +179,7 @@ export function WorkflowManager({ organizationId, stages }: { organizationId: st
       targetLabel: labels.sectorDisplayName,
       detail: `${payload.length} tahap; initial=${payload.find((s) => s.initial)?.label ?? "-"}; final=${payload.filter((s) => s.final).map((s) => s.label).join(", ")}`,
     });
-    logSecurityAudit(supabase, {
+    logSecurityAudit({
       organizationId,
       actorId: currentUserId,
       actorName: "Admin",
