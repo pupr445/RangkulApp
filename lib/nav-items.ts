@@ -26,6 +26,7 @@ export function buildNavItems(labels: LabelSet, canManage: boolean): NavItem[] {
     { icon: NAV_ICONS.calendar, text: "Kalender", href: "/dashboard/calendar" },
     { icon: NAV_ICONS.chat, text: labels.navChat, href: "/dashboard/chat" },
     { icon: NAV_ICONS.activity, text: "Aktivitas", href: "/dashboard/activity" },
+    { icon: "🔔", text: "Notifikasi", href: "/dashboard/notifications" },
     { icon: NAV_ICONS.report, text: labels.navReport, href: "/dashboard/reports" },
     { icon: NAV_ICONS.docs, text: labels.navDocs, href: "/dashboard/docs" },
     { icon: NAV_ICONS.members, text: "Anggota Tim", href: "/dashboard/team" },

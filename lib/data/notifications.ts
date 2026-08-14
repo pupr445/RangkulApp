@@ -1,4 +1,4 @@
-export type NotificationType = "mention" | "assignment" | "dm" | "status_changed";
+export type NotificationType = "mention" | "assignment" | "dm" | "status_changed" | "deadline";
 
 export interface NotificationRow {
   id: string;
@@ -71,6 +71,39 @@ export function notifyUsers(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function fetchUnreadNotificationCount(supabase: any, userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  if (error) {
+    console.error("fetchUnreadNotificationCount gagal:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+
+/** Tandai satu atau beberapa notifikasi sebagai sudah dibaca. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function markNotificationsRead(supabase: any, ids: string[]): Promise<boolean> {
+  if (!ids.length) return true;
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .in("id", ids);
+
+  if (error) {
+    console.error("markNotificationsRead gagal:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
 export async function fetchNotifications(supabase: any, userId: string, limit = 50): Promise<NotificationRow[]> {
   const { data, error } = await supabase
     .from("notifications")
@@ -91,6 +124,7 @@ const TYPE_ICON: Record<NotificationType, string> = {
   assignment: "✅",
   dm: "✉️",
   status_changed: "🔄",
+  deadline: "⏰",
 };
 
 export function notificationIcon(type: NotificationType): string {

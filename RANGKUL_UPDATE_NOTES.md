@@ -57,3 +57,37 @@ Sebelum deploy, jalankan migration 013 dan 014 pada Supabase target. Setelah itu
 - Added activity log events for general task edits, assignee changes, and team changes.
 - This wave deliberately builds on the existing Activity Log, Notification, Team Membership, and Sector Configuration Engine rather than replacing them.
 - Full dependency-based typecheck could not be rerun in this clean ZIP extraction because `node_modules` is not present and package installation was unavailable in the current runtime. The changed TypeScript was reviewed and the migration is included for execution in Supabase.
+
+
+## Wave 3 — Notification Center
+- Menambahkan halaman `/dashboard/notifications` sebagai pusat notifikasi lengkap.
+- Filter: Semua, Belum dibaca, Penugasan, Mention, Pesan, Status, Deadline.
+- Realtime notification tetap menggunakan Supabase Realtime.
+- Menambahkan tombol `Lihat semua notifikasi` pada dropdown bell.
+- Menambahkan migration `016_notification_deadline_and_audit.sql` untuk tipe notifikasi `deadline` dan index tambahan.
+- Menambahkan helper `fetchUnreadNotificationCount`.
+- Reminder deadline otomatis terjadwal belum dinyatakan selesai; migration ini hanya menyiapkan skema. Scheduled job dapat ditambahkan pada wave berikutnya.
+
+## Wave 3 — Typecheck Hotfix
+- Menambahkan tabel `notifications` secara eksplisit pada `Database.public.Tables` di `lib/types/database.ts`.
+- Perubahan ini memperbaiki typed Supabase client agar `supabase.from("notifications").update(...)` tidak lagi menghasilkan parameter bertipe `never`.
+- Error yang dilaporkan pada `app/dashboard/notifications/page.tsx:68` (`TS2345`) ditargetkan langsung oleh hotfix ini.
+- Setelah ZIP ini dipakai di mesin development, jalankan `npm install` lalu `npm run typecheck` untuk verifikasi penuh dengan dependency lokal.
+
+
+## Wave 3 Typecheck Hotfix v3 — 2026-08-14
+- Replaced the loose `notifications` table type with an explicit Supabase-compatible table definition.
+- Added Row/Insert/Update/Relationships typing for `notifications` so `.update({ is_read: true })` is not inferred as `never`.
+- Retained the generic loose typing for legacy tables to avoid unrelated refactors.
+
+
+## Wave 3 Typecheck Hotfix v4
+- Removed the catch-all string index signature from `Database.public.Tables` in `lib/types/database.ts`.
+- Added all concrete tables used by the application explicitly, including `notifications`.
+- Removed stale `tsconfig.tsbuildinfo` from the package to avoid carrying cached compiler state between machines.
+- This is intended to fix Supabase typed-client inference that reduced `.update()` payloads to `never`.
+
+
+## Wave 3 Typecheck Hotfix v5
+- Memindahkan operasi `notifications.update({ is_read: true })` dari page component ke helper `markNotificationsRead` di `lib/data/notifications.ts` menggunakan pola akses data yang sama dengan helper notifikasi lainnya.
+- Tujuannya menghindari inferensi `never` pada Supabase typed client di halaman Notification Center.

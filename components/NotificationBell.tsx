@@ -135,6 +135,11 @@ export function NotificationBell({ organizationId }: { organizationId: string })
                 </button>
               ))
             )}
+            <div className="border-t border-border px-4 py-2 text-center">
+              <a href="/dashboard/notifications" className="text-xs font-semibold hover:underline" style={{ color: labels.accent }}>
+                Lihat semua notifikasi
+              </a>
+            </div>
           </div>
         </>
       )}

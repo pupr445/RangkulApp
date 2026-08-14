@@ -11,7 +11,52 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LooseTable = { Row: any; Insert: any; Update: any };
+type LooseTable = {
+  Row: any;
+  Insert: any;
+  Update: any;
+  Relationships: [];
+};
+
+type NotificationsTable = {
+  Row: {
+    id: string;
+    organization_id: string;
+    user_id: string;
+    actor_id: string | null;
+    actor_name: string | null;
+    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    content: string;
+    link: string | null;
+    is_read: boolean;
+    created_at: string;
+  };
+  Insert: {
+    id?: string;
+    organization_id: string;
+    user_id: string;
+    actor_id?: string | null;
+    actor_name?: string | null;
+    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    content: string;
+    link?: string | null;
+    is_read?: boolean;
+    created_at?: string;
+  };
+  Update: {
+    id?: string;
+    organization_id?: string;
+    user_id?: string;
+    actor_id?: string | null;
+    actor_name?: string | null;
+    type?: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    content?: string;
+    link?: string | null;
+    is_read?: boolean;
+    created_at?: string;
+  };
+  Relationships: [];
+};
 
 export type Database = {
   public: {
@@ -25,7 +70,12 @@ export type Database = {
       custom_fields: LooseTable;
       messages: LooseTable;
       activity_logs: LooseTable;
-      [key: string]: LooseTable;
+      notifications: NotificationsTable;
+      documents: LooseTable;
+      invitations: LooseTable;
+      message_reads: LooseTable;
+      team_members: LooseTable;
+      organization_templates: LooseTable;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
