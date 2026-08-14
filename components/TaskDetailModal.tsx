@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels, useCanManage, useCurrentUserId } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage, useCurrentUserId, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 import { logActivity } from "@/lib/data/activity-log";
+import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
 
 export interface EditableTask {
@@ -15,7 +16,7 @@ export interface EditableTask {
   title: string;
   tag: string;
   due: string; // "-" atau ISO date (yyyy-mm-dd)
-  status: "todo" | "doing" | "done";
+  status: string;
   assigneeId?: string;
   teamId?: string;
   customData?: Record<string, string>;
@@ -37,6 +38,7 @@ export function TaskDetailModal({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
+  const workflowStages = useWorkflowStages();
   const canManage = useCanManage();
   const currentUserId = useCurrentUserId();
   const router = useRouter();
@@ -45,7 +47,7 @@ export function TaskDetailModal({
   const [title, setTitle] = useState(task?.title ?? "");
   const [tag, setTag] = useState(task?.tag ?? "");
   const [dueDate, setDueDate] = useState(task?.due && task.due !== "-" ? task.due : "");
-  const [status, setStatus] = useState<"todo" | "doing" | "done">(task?.status ?? "todo");
+  const [status, setStatus] = useState<string>(task?.status ?? workflowStages[0]?.key ?? "todo");
   const [assigneeId, setAssigneeId] = useState(task?.assigneeId ?? "");
   const [teamId, setTeamId] = useState(task?.teamId ?? "");
   const [customValues, setCustomValues] = useState<Record<string, string>>(task?.customData ?? {});
@@ -75,13 +77,8 @@ export function TaskDetailModal({
   async function handleSave() {
     if (!title.trim() || !task) return;
 
-    const missingRequired = customFields.find(
-      (f) => f.is_required && !customValues[f.field_key]?.trim()
-    );
-    if (missingRequired) {
-      setError(`"${missingRequired.field_label}" wajib diisi.`);
-      return;
-    }
+    const invalidField = customFields.map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "")).find(Boolean);
+    if (invalidField) { setError(invalidField); return; }
 
     setSaving(true);
     setError(null);
@@ -121,7 +118,7 @@ export function TaskDetailModal({
         targetType: "task",
         targetId: task.id,
         targetLabel: title.trim(),
-        detail: `menjadi ${labels.statusLabels[status]}`,
+        detail: `menjadi ${workflowStages.find((s) => s.key === status)?.label ?? status}`,
       });
 
       // Beri tahu penerima tugas kalau statusnya diubah ORANG LAIN
@@ -133,7 +130,7 @@ export function TaskDetailModal({
           actorId: currentUserId,
           actorName,
           type: "status_changed",
-          content: `${actorName} mengubah status "${title.trim()}" menjadi ${labels.statusLabels[status]}.`,
+          content: `${actorName} mengubah status "${title.trim()}" menjadi ${workflowStages.find((s) => s.key === status)?.label ?? status}.`,
           link: "/dashboard/tasks",
         });
       }
@@ -265,13 +262,7 @@ export function TaskDetailModal({
           <div>
             <label className="block text-xs font-semibold mb-1.5">Status</label>
             <div className="flex gap-2">
-              {(
-                [
-                  { key: "todo", label: labels.statusLabels.todo },
-                  { key: "doing", label: labels.statusLabels.doing },
-                  { key: "done", label: labels.statusLabels.done },
-                ] as const
-              ).map((s) => (
+              {workflowStages.map((s) => (
                 <button
                   key={s.key}
                   type="button"

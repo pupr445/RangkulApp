@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { FlatTask } from "@/lib/data/flat-tasks";
 import { NewTaskModal } from "@/components/NewTaskModal";
 import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
@@ -27,6 +27,7 @@ export function TaskList({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
+  const workflowStages = useWorkflowStages();
   const router = useRouter();
   const supabase = createClient();
 
@@ -41,14 +42,9 @@ export function TaskList({
     return list;
   }, [tasks, filter, teamFilter]);
 
-  const STATUS_LABEL: Record<FlatTask["status"], string> = labels.statusLabels;
+  const STATUS_LABEL: Record<string, string> = Object.fromEntries(workflowStages.map((s) => [s.key, s.label]));
 
-  const tabs: { key: "all" | FlatTask["status"]; label: string }[] = [
-    { key: "all", label: "Semua" },
-    { key: "todo", label: STATUS_LABEL.todo },
-    { key: "doing", label: STATUS_LABEL.doing },
-    { key: "done", label: STATUS_LABEL.done },
-  ];
+  const tabs: { key: "all" | FlatTask["status"]; label: string }[] = [{ key: "all", label: "Semua" }, ...workflowStages.map((stage) => ({ key: stage.key, label: stage.label }))];
 
   async function quickChangeStatus(taskId: string, status: FlatTask["status"]) {
     if (isSample || !organizationId) return;
@@ -150,12 +146,12 @@ export function TaskList({
                 <select
                   value={task.status}
                   onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => quickChangeStatus(task.id, e.target.value as FlatTask["status"])}
+                  onChange={(e) => quickChangeStatus(task.id, e.target.value)}
                   className="text-xs border border-border rounded-full px-2 py-0.5 bg-surface outline-none"
                 >
-                  {(Object.keys(STATUS_LABEL) as FlatTask["status"][]).map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABEL[s]}
+                  {workflowStages.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {STATUS_LABEL[s.key]}
                     </option>
                   ))}
                 </select>

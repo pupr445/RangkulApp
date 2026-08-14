@@ -3,6 +3,7 @@ import { sampleFlatTasksFor, FlatTask } from "@/lib/data/flat-tasks";
 import { fetchMemberOptions } from "@/lib/data/members";
 import { getLabels } from "@/lib/labels/sectors";
 import { ExportButton } from "@/components/ExportButton";
+import { normalizeWorkflowStages } from "@/lib/data/workflows";
 
 export const runtime = "edge";
 
@@ -10,12 +11,12 @@ export default async function ReportsPage() {
   const { supabase, user, org } = await getCurrentOrg();
   const sector = org?.sector_type ?? "lainnya";
   const labels = getLabels(sector, org?.label_overrides ?? null);
+  const workflowStages = normalizeWorkflowStages(org?.workflow_stages, sector);
+  const finalStageKey = workflowStages[workflowStages.length - 1]?.key ?? "done";
 
-  const STATUS_META: Record<FlatTask["status"], { label: string; color: string }> = {
-    todo: { label: labels.statusLabels.todo, color: "#C0562C" },
-    doing: { label: labels.statusLabels.doing, color: "#B8862F" },
-    done: { label: labels.statusLabels.done, color: "#2F9E7A" },
-  };
+  const STATUS_META: Record<string, { label: string; color: string }> = Object.fromEntries(
+    workflowStages.map((stage, index) => [stage.key, { label: stage.label, color: index === workflowStages.length - 1 ? "#2F9E7A" : labels.accent }])
+  );
 
   let tasks: FlatTask[] = sampleFlatTasksFor(sector);
   let isSample = true;
@@ -58,23 +59,24 @@ export default async function ReportsPage() {
   }
 
   const total = tasks.length;
-  const counts: Record<FlatTask["status"], number> = { todo: 0, doing: 0, done: 0 };
+  const counts: Record<string, number> = Object.fromEntries(workflowStages.map((s) => [s.key, 0]));
   const byTag: Record<string, { total: number; done: number }> = {};
-  const byMember: Record<string, { name: string; total: number; done: number; doing: number; todo: number }> = {};
+  const byMember: Record<string, { name: string; total: number; statusCounts: Record<string, number>; done: number }> = {};
 
   for (const t of tasks) {
     counts[t.status] += 1;
     byTag[t.tag] ??= { total: 0, done: 0 };
     byTag[t.tag].total += 1;
-    if (t.status === "done") byTag[t.tag].done += 1;
+    if (t.status === finalStageKey) byTag[t.tag].done += 1;
 
     const key = t.assigneeId ?? "unassigned";
-    byMember[key] ??= { name: t.assignee, total: 0, done: 0, doing: 0, todo: 0 };
+    byMember[key] ??= { name: t.assignee, total: 0, statusCounts: Object.fromEntries(workflowStages.map((s) => [s.key, 0])), done: 0 };
     byMember[key].total += 1;
-    byMember[key][t.status] += 1;
+    byMember[key].statusCounts[t.status] = (byMember[key].statusCounts[t.status] ?? 0) + 1;
+    if (t.status === finalStageKey) byMember[key].done += 1;
   }
 
-  const completionRate = total === 0 ? 0 : Math.round((counts.done / total) * 100);
+  const completionRate = total === 0 ? 0 : Math.round(((counts[finalStageKey] ?? 0) / total) * 100);
 
   // Urutkan: paling banyak tugas dulu, "Belum ditentukan" selalu di akhir.
   const memberRows = Object.entries(byMember).sort(([keyA, a], [keyB, b]) => {
@@ -86,7 +88,7 @@ export default async function ReportsPage() {
   const exportRows = tasks.map((t) => ({
     Judul: t.title,
     Kategori: t.tag,
-    Status: STATUS_META[t.status].label,
+    Status: STATUS_META[t.status]?.label ?? t.status,
     "Ditugaskan ke": t.assignee,
     Tenggat: t.due,
   }));
@@ -105,9 +107,9 @@ export default async function ReportsPage() {
       {/* Ringkasan kartu */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total" value={total} color="#16323C" />
-        <StatCard label={STATUS_META.todo.label} value={counts.todo} color={STATUS_META.todo.color} />
-        <StatCard label={STATUS_META.doing.label} value={counts.doing} color={STATUS_META.doing.color} />
-        <StatCard label={STATUS_META.done.label} value={counts.done} color={STATUS_META.done.color} />
+        <StatCard label={workflowStages[0]?.label ?? "Tahap 1"} value={counts[workflowStages[0]?.key ?? "todo"] ?? 0} color={STATUS_META[workflowStages[0]?.key ?? "todo"]?.color ?? labels.accent} />
+        <StatCard label={workflowStages[Math.min(1, workflowStages.length - 1)]?.label ?? "Tahap 2"} value={counts[workflowStages[Math.min(1, workflowStages.length - 1)]?.key ?? "doing"] ?? 0} color={STATUS_META[workflowStages[Math.min(1, workflowStages.length - 1)]?.key ?? "doing"]?.color ?? labels.accent} />
+        <StatCard label={workflowStages[workflowStages.length - 1]?.label ?? "Selesai"} value={counts[finalStageKey] ?? 0} color={STATUS_META[finalStageKey]?.color ?? labels.accent} />
       </div>
 
       {/* Progress bar keseluruhan */}
@@ -119,7 +121,7 @@ export default async function ReportsPage() {
         <div className="h-2.5 rounded-full bg-surfaceAlt overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
-            style={{ width: `${completionRate}%`, backgroundColor: STATUS_META.done.color }}
+            style={{ width: `${completionRate}%`, backgroundColor: STATUS_META[finalStageKey]?.color ?? labels.accent }}
           />
         </div>
       </div>
@@ -136,7 +138,7 @@ export default async function ReportsPage() {
                   <span className="font-medium">{stat.name}</span>
                   <span className="text-inkMuted">
                     {stat.done}/{stat.total} selesai
-                    {stat.doing > 0 && ` · ${stat.doing} sedang dikerjakan`}
+                    {Object.entries(stat.statusCounts).filter(([k]) => k !== finalStageKey && stat.statusCounts[k] > 0).map(([k,v]) => ` · ${v} ${STATUS_META[k]?.label ?? k}`).join("")}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-surfaceAlt overflow-hidden">

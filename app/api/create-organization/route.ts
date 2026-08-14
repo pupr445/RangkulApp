@@ -99,9 +99,16 @@ export async function POST(request: Request) {
           field_options?: string[];
           is_required?: boolean;
         }>;
+        workflow_stages?: Array<{ key: string; label: string }>
       }
     | null
     | undefined;
+
+  const workflowStages = structure?.workflow_stages ?? [];
+  if (workflowStages.length >= 2) {
+    const { error: workflowError } = await admin.from("organizations").update({ workflow_stages: workflowStages }).eq("id", newOrg.id);
+    if (workflowError) warnings.push(`Workflow bawaan sektor gagal disimpan (${workflowError.message}).`);
+  }
 
   const teamNames = structure?.teams ?? [];
   if (teamNames.length > 0) {

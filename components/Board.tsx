@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { BoardColumn } from "@/lib/data/sample-tasks";
 import { NewTaskModal } from "@/components/NewTaskModal";
 import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
@@ -31,6 +31,7 @@ export function Board({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
+  const workflowStages = useWorkflowStages();
   const router = useRouter();
   const supabase = createClient();
 
@@ -41,11 +42,7 @@ export function Board({
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [teamFilter, setTeamFilter] = useState<string>("all");
 
-  const STATUS_OPTIONS: { key: "todo" | "doing" | "done"; label: string }[] = [
-    { key: "todo", label: labels.statusLabels.todo },
-    { key: "doing", label: labels.statusLabels.doing },
-    { key: "done", label: labels.statusLabels.done },
-  ];
+  const STATUS_OPTIONS = workflowStages;
 
   // Sinkron ulang saat props berubah (misalnya setelah router.refresh())
   useEffect(() => setCols(columns), [columns]);
@@ -171,7 +168,7 @@ export function Board({
                     title: card.title,
                     tag: card.tag,
                     due: card.due,
-                    status: col.id as "todo" | "doing" | "done",
+                    status: col.id,
                     assigneeId: card.assigneeId,
                     teamId: card.teamId,
                     customData: card.customData,

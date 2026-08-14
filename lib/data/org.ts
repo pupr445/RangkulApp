@@ -7,6 +7,7 @@ export interface OrgRow {
   name: string;
   sector_type: SectorKey;
   label_overrides: Record<string, string> | null;
+  workflow_stages: unknown;
 }
 
 /**
@@ -42,7 +43,7 @@ export async function getCurrentOrg() {
   // 1. Owner
   const { data: ownedOrg } = await supabase
     .from("organizations")
-    .select("id, name, sector_type, label_overrides")
+    .select("id, name, sector_type, label_overrides, workflow_stages")
     .eq("owner_id", user.id)
     .maybeSingle();
 
@@ -61,7 +62,7 @@ export async function getCurrentOrg() {
     const m = membership as { organization_id: string; role: string };
     const { data: memberOrg } = await supabase
       .from("organizations")
-      .select("id, name, sector_type, label_overrides")
+      .select("id, name, sector_type, label_overrides, workflow_stages")
       .eq("id", m.organization_id)
       .maybeSingle();
     if (memberOrg) {
@@ -106,7 +107,7 @@ export async function getCurrentOrg() {
 
       const { data: joinedOrg } = await supabase
         .from("organizations")
-        .select("id, name, sector_type, label_overrides")
+        .select("id, name, sector_type, label_overrides, workflow_stages")
         .eq("id", inv.organization_id)
         .maybeSingle();
 

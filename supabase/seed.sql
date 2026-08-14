@@ -28,6 +28,11 @@ insert into sector_templates (sector_type, template_name, default_structure) val
   "teams": ["Kelas 7A", "Kelas 8A", "Kelas 9A"],
   "custom_fields": [
     { "field_label": "Nilai", "field_type": "number", "is_required": false }
+  ],
+  "workflow_stages": [
+    { "key": "todo", "label": "Belum Dikerjakan" },
+    { "key": "doing", "label": "Sedang Dikerjakan" },
+    { "key": "done", "label": "Selesai" }
   ]
 }'),
 ('klinik', 'Struktur Klinik Standar', '{
@@ -35,28 +40,58 @@ insert into sector_templates (sector_type, template_name, default_structure) val
   "custom_fields": [
     { "field_label": "Nama Pasien", "field_type": "text", "is_required": true },
     { "field_label": "Jenis Tindakan", "field_type": "select", "field_options": ["Konsultasi", "Pemeriksaan", "Tindakan", "Kontrol"], "is_required": false }
+  ],
+  "workflow_stages": [
+    { "key": "terjadwal", "label": "Terjadwal" },
+    { "key": "pemeriksaan", "label": "Pemeriksaan" },
+    { "key": "hasil", "label": "Menunggu Hasil" },
+    { "key": "selesai", "label": "Selesai" }
   ]
 }'),
 ('bisnis', 'Struktur Bisnis Standar', '{
   "teams": ["Marketing", "Operasional", "Keuangan"],
   "custom_fields": [
     { "field_label": "Prioritas", "field_type": "select", "field_options": ["Rendah", "Sedang", "Tinggi"], "is_required": false }
+  ],
+  "workflow_stages": [
+    { "key": "lead", "label": "Lead" },
+    { "key": "follow_up", "label": "Follow Up" },
+    { "key": "negosiasi", "label": "Negosiasi" },
+    { "key": "deal", "label": "Deal" },
+    { "key": "selesai", "label": "Selesai" }
   ]
 }'),
 ('masjid', 'Struktur Masjid Standar', '{
   "teams": ["Kepengurusan Inti", "Divisi Kajian", "Divisi Sosial"],
   "custom_fields": [
     { "field_label": "Jenis Kegiatan", "field_type": "select", "field_options": ["Kajian", "Sosial", "Pemeliharaan", "Keuangan"], "is_required": false }
+  ],
+  "workflow_stages": [
+    { "key": "rencana", "label": "Direncanakan" },
+    { "key": "persiapan", "label": "Persiapan" },
+    { "key": "pelaksanaan", "label": "Pelaksanaan" },
+    { "key": "selesai", "label": "Selesai" }
   ]
 }'),
 ('komunitas', 'Struktur Komunitas Standar', '{
   "teams": ["Divisi Acara", "Divisi Humas", "Divisi Keuangan"],
   "custom_fields": [
     { "field_label": "Jenis Program", "field_type": "select", "field_options": ["Acara", "Sosial", "Internal"], "is_required": false }
+  ],
+  "workflow_stages": [
+    { "key": "rencana", "label": "Direncanakan" },
+    { "key": "persiapan", "label": "Persiapan" },
+    { "key": "pelaksanaan", "label": "Pelaksanaan" },
+    { "key": "selesai", "label": "Selesai" }
   ]
 }'),
 ('lainnya', 'Struktur Umum', '{
   "teams": ["Tim Utama"],
-  "custom_fields": []
+  "custom_fields": [],
+  "workflow_stages": [
+    { "key": "todo", "label": "Belum Dikerjakan" },
+    { "key": "doing", "label": "Sedang Dikerjakan" },
+    { "key": "done", "label": "Selesai" }
+  ]
 }')
 on conflict do nothing;

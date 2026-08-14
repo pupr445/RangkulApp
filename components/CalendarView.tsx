@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { FlatTask } from "@/lib/data/flat-tasks";
 import { TaskDetailModal, EditableTask } from "@/components/TaskDetailModal";
 import { NewTaskModal } from "@/components/NewTaskModal";
@@ -53,7 +53,8 @@ export function CalendarView({
   teams?: TeamOption[];
 }) {
   const labels = useLabels();
-  const STATUS_LABEL: Record<FlatTask["status"], string> = labels.statusLabels;
+  const workflowStages = useWorkflowStages();
+  const STATUS_LABEL: Record<string, string> = Object.fromEntries(workflowStages.map((s) => [s.key, s.label]));
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);

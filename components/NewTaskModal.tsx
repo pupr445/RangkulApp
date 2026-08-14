@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/data/activity-log";
+import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
@@ -29,13 +30,14 @@ export function NewTaskModal({
   defaultDueDate?: string;
 }) {
   const labels = useLabels();
+  const workflowStages = useWorkflowStages();
   const router = useRouter();
   const supabase = createClient();
 
   const [title, setTitle] = useState("");
   const [tag, setTag] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [status, setStatus] = useState<"todo" | "doing" | "done">("todo");
+  const [status, setStatus] = useState<string>(workflowStages[0]?.key ?? "todo");
   const [assigneeId, setAssigneeId] = useState("");
   const [teamId, setTeamId] = useState("");
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
@@ -55,7 +57,7 @@ export function NewTaskModal({
     setTitle("");
     setTag("");
     setDueDate("");
-    setStatus("todo");
+    setStatus(workflowStages[0]?.key ?? "todo");
     setAssigneeId("");
     setTeamId("");
     setCustomValues({});
@@ -66,13 +68,8 @@ export function NewTaskModal({
   async function handleSubmit() {
     if (!title.trim()) return;
 
-    const missingRequired = customFields.find(
-      (f) => f.is_required && !customValues[f.field_key]?.trim()
-    );
-    if (missingRequired) {
-      setError(`"${missingRequired.field_label}" wajib diisi.`);
-      return;
-    }
+    const invalidField = customFields.map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "")).find(Boolean);
+    if (invalidField) { setError(invalidField); return; }
 
     setSaving(true);
     setError(null);
@@ -217,13 +214,7 @@ export function NewTaskModal({
           <div>
             <label className="block text-xs font-semibold mb-1.5">Status Awal</label>
             <div className="flex gap-2">
-              {(
-                [
-                  { key: "todo", label: labels.statusLabels.todo },
-                  { key: "doing", label: labels.statusLabels.doing },
-                  { key: "done", label: labels.statusLabels.done },
-                ] as const
-              ).map((s) => (
+              {workflowStages.map((s) => (
                 <button
                   key={s.key}
                   type="button"

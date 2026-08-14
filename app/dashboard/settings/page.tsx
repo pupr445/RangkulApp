@@ -8,6 +8,10 @@ import { SettingsForm } from "@/components/SettingsForm";
 import { CustomFieldsManager } from "@/components/CustomFieldsManager";
 import { TeamsManager } from "@/components/TeamsManager";
 import { LabelOverridesManager } from "@/components/LabelOverridesManager";
+import { WorkflowManager } from "@/components/WorkflowManager";
+import { normalizeWorkflowStages } from "@/lib/data/workflows";
+import { fetchOrganizationTemplates } from "@/lib/data/templates";
+import { TemplateManager } from "@/components/TemplateManager";
 
 export const runtime = "edge";
 
@@ -25,6 +29,8 @@ export default async function SettingsPage() {
   }
 
   const customFields = await fetchTaskCustomFields(supabase, org.id);
+  const workflowStages = normalizeWorkflowStages(org.workflow_stages, org.sector_type);
+  const templates = await fetchOrganizationTemplates(supabase, org.id);
   const teams = await fetchTeams(supabase, org.id);
   const orgMembers = await fetchMemberOptions(supabase, org.id, {
     id: user.id,
@@ -52,6 +58,8 @@ export default async function SettingsPage() {
           </p>
         </div>
       )}
+      <TemplateManager organizationId={org.id} templates={templates} workflowStages={workflowStages} teams={teams} fields={customFields} />
+      <WorkflowManager organizationId={org.id} stages={workflowStages} />
       <TeamsManager organizationId={org.id} teams={teams} orgMembers={orgMembers} teamMembersMap={teamMembersMap} />
       <CustomFieldsManager organizationId={org.id} fields={customFields} />
     </main>

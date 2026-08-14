@@ -6,6 +6,10 @@ export type ActivityAction =
   | "team.deleted"
   | "member.invited"
   | "custom_field.created"
+  | "custom_field.updated"
+  | "workflow.updated"
+  | "template.created"
+  | "template.applied"
   | "document.uploaded";
 
 export interface ActivityLogEntry {
@@ -95,6 +99,10 @@ const ACTION_VERB: Record<string, string> = {
   "team.deleted": "menghapus",
   "member.invited": "mengundang",
   "custom_field.created": "menambahkan field",
+  "custom_field.updated": "mengubah field",
+  "workflow.updated": "mengubah workflow",
+  "template.created": "membuat template",
+  "template.applied": "menerapkan template",
   "document.uploaded": "mengunggah dokumen",
 };
 

@@ -62,6 +62,9 @@ export interface LabelSet {
     doing: string;
     done: string;
   };
+
+  /** Workflow default yang dapat dijadikan preset awal organisasi. */
+  workflowStages: { key: string; label: string }[];
 }
 
 export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
@@ -88,6 +91,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Kelas 9A",
     boardSubtitleExample: "Progres tugas & PR minggu ini",
     statusLabels: { todo: "Belum Dikerjakan", doing: "Sedang Dikerjakan", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "Belum Dikerjakan" },
+      { key: "doing", label: "Sedang Dikerjakan" },
+      { key: "done", label: "Selesai" },
+    ],
   },
   klinik: {
     sectorDisplayName: "Klinik / Kesehatan",
@@ -112,6 +120,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Poli Umum",
     boardSubtitleExample: "Jadwal & tindak lanjut pasien hari ini",
     statusLabels: { todo: "Terjadwal", doing: "Sedang Berlangsung", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "Terjadwal" },
+      { key: "doing", label: "Sedang Berlangsung" },
+      { key: "done", label: "Selesai" },
+    ],
   },
   bisnis: {
     sectorDisplayName: "Bisnis Umum",
@@ -136,6 +149,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Proyek: Website Client A",
     boardSubtitleExample: "Progres pekerjaan tim minggu ini",
     statusLabels: { todo: "To Do", doing: "In Progress", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "To Do" },
+      { key: "doing", label: "In Progress" },
+      { key: "done", label: "Selesai" },
+    ],
   },
   masjid: {
     sectorDisplayName: "Masjid / Keagamaan",
@@ -160,6 +178,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Kepengurusan",
     boardSubtitleExample: "Kegiatan & program masjid bulan ini",
     statusLabels: { todo: "Direncanakan", doing: "Sedang Berjalan", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "Direncanakan" },
+      { key: "doing", label: "Sedang Berjalan" },
+      { key: "done", label: "Selesai" },
+    ],
   },
   komunitas: {
     sectorDisplayName: "Komunitas / Organisasi",
@@ -184,6 +207,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Divisi Acara",
     boardSubtitleExample: "Persiapan program bulan ini",
     statusLabels: { todo: "Direncanakan", doing: "Sedang Berjalan", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "Direncanakan" },
+      { key: "doing", label: "Sedang Berjalan" },
+      { key: "done", label: "Selesai" },
+    ],
   },
   lainnya: {
     sectorDisplayName: "Lainnya (Kustom)",
@@ -208,6 +236,11 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     boardTitleExample: "Papan Kerja",
     boardSubtitleExample: "Progres pekerjaan tim",
     statusLabels: { todo: "Belum Dikerjakan", doing: "Sedang Dikerjakan", done: "Selesai" },
+    workflowStages: [
+      { key: "todo", label: "Belum Dikerjakan" },
+      { key: "doing", label: "Sedang Dikerjakan" },
+      { key: "done", label: "Selesai" },
+    ],
   },
 };
 

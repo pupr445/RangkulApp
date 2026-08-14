@@ -5,6 +5,7 @@ import { fetchMemberOptions, initialsFromName } from "@/lib/data/members";
 import { fetchTaskCustomFields } from "@/lib/data/custom-fields";
 import { fetchTeams } from "@/lib/data/teams";
 import { Board } from "@/components/Board";
+import { normalizeWorkflowStages } from "@/lib/data/workflows";
 
 export const runtime = "edge";
 
@@ -13,6 +14,7 @@ export default async function DashboardPage() {
 
   const sector = org?.sector_type ?? "lainnya";
   const labels = getLabels(sector, org?.label_overrides ?? null);
+  const workflowStages = normalizeWorkflowStages(org?.workflow_stages, sector);
 
   // Coba ambil tugas sungguhan dari database. Jika organisasi belum
   // punya data (baru saja onboarding), tampilkan contoh per sektor
@@ -44,14 +46,12 @@ export default async function DashboardPage() {
 
     if (tasks && tasks.length > 0) {
       isSample = false;
-      const grouped: Record<string, BoardColumn> = {
-        todo: { id: "todo", name: labels.statusLabels.todo, cards: [] },
-        doing: { id: "doing", name: labels.statusLabels.doing, cards: [] },
-        done: { id: "done", name: labels.statusLabels.done, cards: [] },
-      };
+      const grouped = Object.fromEntries(
+        workflowStages.map((stage) => [stage.key, { id: stage.key, name: stage.label, cards: [] }])
+      ) as Record<string, BoardColumn>;
       for (const t of tasks as Array<Record<string, unknown>>) {
         const status = (t.status as string) ?? "todo";
-        const bucket = grouped[status] ?? grouped.todo;
+        const bucket = grouped[status] ?? grouped[workflowStages[0]?.key ?? "todo"];
         const assigneeId = (t.assignee_id as string | null) ?? undefined;
         const assigneeName = assigneeId ? memberMap.get(assigneeId) ?? "Anggota" : "Belum ditentukan";
         bucket.cards.push({
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
           customData: (t.custom_data as Record<string, string> | null) ?? {},
         });
       }
-      columns = Object.values(grouped);
+      columns = workflowStages.map((stage) => grouped[stage.key]);
     }
   }
 

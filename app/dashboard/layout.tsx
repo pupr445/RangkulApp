@@ -3,6 +3,7 @@ import { getCurrentOrg } from "@/lib/data/org";
 import { LabelProvider } from "@/lib/labels/LabelProvider";
 import { TopBar } from "@/components/TopBar";
 import { Sidebar } from "@/components/Sidebar";
+import { normalizeWorkflowStages } from "@/lib/data/workflows";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, org, role } = await getCurrentOrg();
@@ -21,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     "Pengguna";
 
   return (
-    <LabelProvider sector={org.sector_type} overrides={org.label_overrides} role={role} userId={user.id}>
+    <LabelProvider sector={org.sector_type} overrides={org.label_overrides} workflowStages={normalizeWorkflowStages(org.workflow_stages, org.sector_type)} role={role} userId={user.id}>
       <div className="min-h-screen flex flex-col">
         <TopBar userName={displayName} organizationId={org.id} />
         <div className="flex flex-1">

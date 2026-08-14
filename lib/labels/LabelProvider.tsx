@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { getLabels, LabelSet, SectorKey } from "./sectors";
+import { defaultWorkflowForSector, WorkflowStage } from "@/lib/data/workflows";
 
 export type OrgRole = "owner" | "manager" | "member";
 
@@ -10,6 +11,7 @@ interface LabelContextValue {
   sector: SectorKey;
   role: OrgRole;
   userId: string;
+  workflowStages: WorkflowStage[];
 }
 
 const LabelContext = createContext<LabelContextValue | null>(null);
@@ -30,18 +32,30 @@ export function LabelProvider({
   overrides,
   role = "member",
   userId = "",
+  workflowStages,
   children,
 }: {
   sector: SectorKey;
   overrides?: Partial<LabelSet> | null;
   role?: OrgRole;
   userId?: string;
+  workflowStages?: WorkflowStage[];
   children: React.ReactNode;
 }) {
-  const value = useMemo(
-    () => ({ labels: getLabels(sector, overrides), sector, role, userId }),
-    [sector, overrides, role, userId]
-  );
+  const value = useMemo(() => {
+    const stages = workflowStages?.length ? workflowStages : defaultWorkflowForSector(sector);
+    const base = getLabels(sector, overrides);
+    const nextLabels = {
+      ...base,
+      statusLabels: {
+        todo: stages[0]?.label ?? base.statusLabels.todo,
+        doing: stages[1]?.label ?? base.statusLabels.doing,
+        done: stages[stages.length - 1]?.label ?? base.statusLabels.done,
+      },
+      workflowStages: stages.map((stage) => ({ ...stage })),
+    };
+    return { labels: nextLabels, sector, role, userId, workflowStages: stages };
+  }, [sector, overrides, role, userId, workflowStages]);
 
   return <LabelContext.Provider value={value}>{children}</LabelContext.Provider>;
 }
@@ -69,6 +83,12 @@ export function useCanManage(): boolean {
     throw new Error("useCanManage() harus dipanggil di dalam <LabelProvider>");
   }
   return ctx.role === "owner" || ctx.role === "manager";
+}
+
+export function useWorkflowStages(): WorkflowStage[] {
+  const ctx = useContext(LabelContext);
+  if (!ctx) throw new Error("useWorkflowStages() harus dipanggil di dalam <LabelProvider>");
+  return ctx.workflowStages;
 }
 
 export function useCurrentUserId(): string {
