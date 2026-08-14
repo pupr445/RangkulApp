@@ -41,6 +41,18 @@ export function TeamManager({
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ email: string; emailSent: boolean } | null>(null);
 
+  const whatsappMessage = lastResult
+    ? `Halo, kamu diundang bergabung ke ${ownerName || "organisasi RANGKUL"} di RANGKUL sebagai ${
+        role === "manager" ? labels.managerRole : labels.memberRole
+      }. Login dengan Google menggunakan email ${lastResult.email}: ${appOrigin}/login?email=${encodeURIComponent(
+        lastResult.email
+      )}`
+    : "";
+
+  const whatsappHref = whatsappMessage
+    ? `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`
+    : "";
+
   async function handleInvite() {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
@@ -112,14 +124,36 @@ export function TeamManager({
           </div>
           {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
           {lastResult && (
-            <p
-              className="text-xs mt-2 font-medium"
-              style={{ color: lastResult.emailSent ? "#2F9E7A" : "#B8862F" }}
-            >
-              {lastResult.emailSent
-                ? `✓ Email undangan terkirim ke ${lastResult.email}.`
-                : `Undangan tersimpan, tapi email otomatis belum aktif — kabari ${lastResult.email} secara manual untuk login di ${appOrigin} memakai email ini.`}
-            </p>
+            <>
+              <p
+                className="text-xs mt-2 font-medium"
+                style={{ color: lastResult.emailSent ? "#2F9E7A" : "#B8862F" }}
+              >
+                {lastResult.emailSent
+                  ? `✓ Email undangan terkirim ke ${lastResult.email}.`
+                  : `Undangan tersimpan, tapi email otomatis belum aktif — kabari ${lastResult.email} secara manual untuk login di ${appOrigin} memakai email ini.`}
+              </p>
+              <div className="flex gap-2 flex-wrap mt-3">
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white"
+                  style={{ backgroundColor: "#25D366" }}
+                >
+                  <span aria-hidden="true">💬</span> Kirim via WhatsApp
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(whatsappMessage);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold border border-border bg-surface hover:bg-surfaceMuted"
+                >
+                  Salin Pesan
+                </button>
+              </div>
+            </>
           )}
           <p className="text-xs text-inkMuted mt-3">
             {lastResult

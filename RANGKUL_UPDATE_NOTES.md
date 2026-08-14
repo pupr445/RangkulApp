@@ -122,3 +122,11 @@ Sebelum deploy, jalankan migration 013 dan 014 pada Supabase target. Setelah itu
 ## Wave 4 typecheck hotfix
 
 Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` mereferensikan `ScheduledController` tanpa type definition yang tersedia pada tsconfig root. Parameter scheduler sekarang ditipkan sebagai `unknown` karena controller tidak digunakan oleh handler. Ini tidak mengubah perilaku runtime Cloudflare Cron.
+
+## Wave 5 — Undangan via WhatsApp (Quick Win Fase 2)
+- Menambahkan tombol `Kirim via WhatsApp` pada halaman Anggota Tim setelah undangan berhasil dibuat.
+- Menambahkan tombol `Salin Pesan` untuk alur manual jika admin tidak langsung membuka WhatsApp.
+- Pesan WhatsApp berisi organisasi, role, email penerima, dan deep-link ke `/login?email=...`.
+- Halaman login membaca parameter email dari link undangan dan menampilkan instruksi agar penerima menggunakan akun Google yang sesuai.
+- Tidak menambah migration database karena pendekatan ini memakai invitation yang sudah ada; penerimaan tetap menggunakan mekanisme auto-join berbasis email yang sudah berjalan.
+\n\n## Wave 5 Hotfix — Login Suspense\n- Memisahkan /login menjadi Server Component wrapper + Client Component.\n- useSearchParams sekarang berjalan di bawah React Suspense agar production prerender tidak gagal.\n- UI/auth flow tetap di login-client.tsx dengan "use client".\n
