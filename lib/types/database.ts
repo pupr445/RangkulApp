@@ -25,7 +25,7 @@ type NotificationsTable = {
     user_id: string;
     actor_id: string | null;
     actor_name: string | null;
-    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline" | "invitation" | "overdue";
     content: string;
     link: string | null;
     is_read: boolean;
@@ -37,7 +37,7 @@ type NotificationsTable = {
     user_id: string;
     actor_id?: string | null;
     actor_name?: string | null;
-    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    type: "mention" | "assignment" | "dm" | "status_changed" | "deadline" | "invitation" | "overdue";
     content: string;
     link?: string | null;
     is_read?: boolean;
@@ -49,7 +49,7 @@ type NotificationsTable = {
     user_id?: string;
     actor_id?: string | null;
     actor_name?: string | null;
-    type?: "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+    type?: "mention" | "assignment" | "dm" | "status_changed" | "deadline" | "invitation" | "overdue";
     content?: string;
     link?: string | null;
     is_read?: boolean;
@@ -77,6 +77,7 @@ export type Database = {
       message_reads: LooseTable;
       team_members: LooseTable;
       organization_templates: LooseTable;
+      notification_email_prefs: LooseTable;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

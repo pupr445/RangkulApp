@@ -1,4 +1,4 @@
-export type NotificationType = "mention" | "assignment" | "dm" | "status_changed" | "deadline";
+export type NotificationType = "mention" | "assignment" | "dm" | "status_changed" | "deadline" | "invitation" | "overdue";
 
 export interface NotificationRow {
   id: string;
@@ -125,6 +125,8 @@ const TYPE_ICON: Record<NotificationType, string> = {
   dm: "✉️",
   status_changed: "🔄",
   deadline: "⏰",
+  invitation: "👋",
+  overdue: "⚠️",
 };
 
 export function notificationIcon(type: NotificationType): string {

@@ -26,6 +26,8 @@ const FILTERS: { key: "all" | "unread" | NotificationType; label: string }[] = [
   { key: "dm", label: "Pesan" },
   { key: "status_changed", label: "Status" },
   { key: "deadline", label: "Deadline" },
+  { key: "overdue", label: "Terlambat" },
+  { key: "invitation", label: "Undangan" },
 ];
 
 export default function NotificationsPage() {
@@ -78,6 +80,12 @@ export default function NotificationsPage() {
         <button disabled={!unreadIds.length} onClick={() => markRead(unreadIds)} className="text-xs font-semibold px-3 py-2 rounded-lg border border-border disabled:opacity-40 hover:bg-surfaceAlt">
           Tandai semua dibaca
         </button>
+      </div>
+
+      <div className="mb-5">
+        <Link href="/dashboard/notifications/preferences" className="text-xs font-semibold hover:underline" style={{ color: labels.accent }}>
+          Atur email notifikasi →
+        </Link>
       </div>
 
       <div className="flex gap-1.5 flex-wrap mb-5">

@@ -193,3 +193,24 @@ Memperbaiki typecheck project karena `workers/deadline-reminder/index.ts` merefe
 - `logSecurityAudit` dipindahkan dari insert langsung di client menjadi endpoint server baru `POST /api/audit-log` yang memakai service role (`createAdminClient`). Endpoint ini memverifikasi sesi login dan keanggotaan organisasi sebelum menulis, sehingga baris audit tidak lagi bisa gagal diam-diam hanya karena sesi client tidak lolos RLS `security_audit_insert_managers`.
 - Semua pemanggil `logSecurityAudit(...)` diperbarui: parameter `supabase` di awal dihapus (tidak diperlukan lagi karena penulisan sekarang lewat fetch ke endpoint server, bukan client Supabase langsung).
 - Diverifikasi ulang: `npm run typecheck` lolos bersih tanpa `as any`, `npm run build` berhasil compile (gagal prerender `/login` di lingkungan tanpa `.env` adalah perilaku yang sudah diketahui, bukan regresi).
+
+## Wave 9 — Notification Engine (Fase 5 Roadmap)
+Melengkapi Notification Rules & Notification Preferences yang sebelumnya jadi celah paling terasa.
+
+**Migration baru:** `019_notification_engine.sql`
+- Tabel baru `notification_email_prefs` (1 baris per user, RLS `user_id = auth.uid()`) — sengaja dipisah dari `organization_members` karena Owner organisasi tidak selalu punya baris di sana.
+- Kolom `notifications.emailed_at` + index parsial untuk antrean digest worker.
+- Tipe notifikasi baru: `invitation`, `overdue`.
+
+**Aturan notifikasi baru:**
+- **Invitation** — yang mengundang diberi tahu saat undangannya diterima & anggota baru bergabung (`lib/data/org.ts`).
+- **Overdue** — pengingat berulang tiap 3 hari untuk tugas yang sudah lewat tenggat & belum di stage final, digabung ke endpoint `app/api/cron/deadline-reminders` yang sudah ada (bukan worker baru — reuse infra).
+
+**Preferensi email notifikasi:**
+- Halaman baru `/dashboard/notifications/preferences`, komponen `NotificationPreferences.tsx` — toggle per tipe notifikasi, default semua OFF (opt-in, bukan opt-out).
+- Endpoint baru `app/api/cron/notification-digest` + worker `rangkul-notification-digest` (setiap 15 menit) — mengirim SATU email ringkasan per user (bukan satu email per notifikasi), hanya untuk tipe yang diaktifkan user, lewat Resend (reuse pattern dari fitur invite).
+- Kalau `RESEND_API_KEY`/`RESEND_FROM_EMAIL` belum diisi, notifikasi tetap ditandai "diproses" (jujur, tidak retry selamanya) tapi tidak pura-pura terkirim.
+
+**Belum dikerjakan (sengaja discope keluar dari wave ini):** Web Push notification — butuh VAPID keys, service worker, dan UX permission browser yang jauh lebih besar dari sisa item Fase 5; akan dikerjakan terpisah supaya kualitasnya tidak dikompromikan demi buru-buru selesai.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { SectorKey } from "@/lib/labels/sectors";
 import { OrgRole } from "@/lib/labels/LabelProvider";
+import { notifyUser } from "@/lib/data/notifications";
 
 export interface OrgRow {
   id: string;
@@ -80,13 +81,13 @@ export async function getCurrentOrg() {
   if (email) {
     const { data: invite } = await supabase
       .from("invitations")
-      .select("organization_id, role")
+      .select("organization_id, role, invited_by")
       .eq("email", email)
       .eq("accepted", false)
       .maybeSingle();
 
     if (invite) {
-      const inv = invite as { organization_id: string; role: string };
+      const inv = invite as { organization_id: string; role: string; invited_by: string | null };
 
       await supabase.from("organization_members").insert([
         {
@@ -108,6 +109,22 @@ export async function getCurrentOrg() {
         .select("id, name, sector_type, label_overrides, workflow_stages")
         .eq("id", inv.organization_id)
         .maybeSingle();
+
+      // Beri tahu yang mengundang bahwa undangannya sudah diterima —
+      // supaya manager tahu anggotanya sudah aktif tanpa perlu cek manual.
+      if (inv.invited_by) {
+        const joinedName =
+          (user.user_metadata?.full_name as string | undefined) ?? email.split("@")[0];
+        notifyUser(supabase, {
+          organizationId: inv.organization_id,
+          recipientId: inv.invited_by,
+          actorId: user.id,
+          actorName: joinedName,
+          type: "invitation",
+          content: `${joinedName} menerima undangan dan bergabung ke organisasi.`,
+          link: "/dashboard/settings",
+        });
+      }
 
       if (joinedOrg) {
         return {

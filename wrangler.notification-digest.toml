@@ -1,0 +1,8 @@
+name = "rangkul-notification-digest"
+main = "workers/notification-digest/index.ts"
+compatibility_date = "2026-08-14"
+
+[triggers]
+# Setiap 15 menit — cukup responsif untuk digest, tidak terlalu sering
+# sehingga membebani Resend API di paket gratis.
+crons = ["*/15 * * * *"]
