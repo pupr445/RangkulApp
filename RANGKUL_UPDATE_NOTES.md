@@ -279,3 +279,17 @@ Keduanya memanggil endpoint yang sama, cuma beda parameter `period`.
 **Catatan scope yang disengaja:** ringkasan ini adalah SNAPSHOT kondisi saat ini (total/selesai/terlambat/jatuh tempo), BUKAN delta "apa yang berubah sejak kemarin" — karena tabel `tasks` belum punya kolom `updated_at`/`completed_at` untuk melacak itu secara akurat. Delta yang lebih detail bisa jadi peningkatan terpisah nanti, bukan dipaksakan sekarang dengan asumsi yang tidak akurat.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 13 — Hotfix: error login Google disembunyikan diam-diam
+Bug ditemukan lewat video: login dengan akun Google terpental balik ke halaman login TANPA pesan error apa pun, walau /auth/callback sebenarnya sudah mendeteksi kegagalan (mengirim ?error=auth_callback_failed di URL redirect) — halaman login-nya tidak pernah membaca/menampilkan parameter itu.
+
+**Fix:**
+- `app/auth/callback/route.ts` — sekarang menyertakan pesan error asli dari Supabase (`error.message`) di URL redirect sebagai parameter `reason`, juga meneruskan `error_description` dari Google/Supabase kalau OAuth gagal di level provider (mis. user membatalkan).
+- `app/(auth)/login/login-client.tsx` — menampilkan pesan error tersebut ke user dengan jelas, alih-alih diam-diam kembali ke form kosong.
+
+**PENTING — ini memperbaiki GEJALA (error tersembunyi), BUKAN NECESSARILY akar penyebab kenapa login gagal.** Kemungkinan besar akar masalahnya ada di KONFIGURASI Supabase/Google Cloud Console (bukan bug kode), cek ini:
+1. Supabase Dashboard → Authentication → URL Configuration → pastikan `https://rangkulapp.pages.dev/auth/callback` ada di "Redirect URLs" (bukan cuma Site URL).
+2. Google Cloud Console → Credentials → OAuth Client → "Authorized redirect URIs" harus berisi `https://<project-ref>.supabase.co/auth/v1/callback` (domain Supabase, BUKAN domain RANGKUL — Google redirect ke Supabase dulu, baru Supabase redirect ke RANGKUL).
+3. Kalau salah satu belum benar, sekarang errornya akan TERLIHAT di halaman login setelah Wave 13 ini di-deploy — pesan itu akan langsung menunjukkan akar masalah sebenarnya, tinggal dikirim ke Claude untuk diagnosis lanjutan.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.

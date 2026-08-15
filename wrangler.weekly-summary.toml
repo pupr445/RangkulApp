@@ -5,4 +5,10 @@ compatibility_date = "2026-08-14"
 [triggers]
 # 23:00 UTC Minggu = 06:00 WIB Senin pagi — ringkasan mingguan siap
 # dibaca di awal pekan kerja.
+#
+# CATATAN: sengaja pakai "SUN" bukan angka "0" untuk hari Minggu — ada
+# bug yang sudah dilaporkan ke Cloudflare (workers-sdk issue #8674) di
+# mana cron dengan day-of-week "0" ditolak sebagai "invalid cron string"
+# walau secara sintaks itu standar. "SUN" adalah workaround yang
+# berfungsi sampai bug itu benar-benar diperbaiki di sisi Cloudflare.
 crons = ["0 23 * * SUN"]

@@ -8,6 +8,8 @@ export default function LoginPage() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const invitedEmail = useMemo(() => searchParams.get("email")?.trim().toLowerCase() ?? "", [searchParams]);
+  const authError = searchParams.get("error");
+  const authErrorReason = searchParams.get("reason");
 
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
@@ -31,6 +33,16 @@ export default function LoginPage() {
         {invitedEmail && (
           <div className="mb-4 rounded-lg border border-border bg-surfaceMuted px-3 py-2 text-left text-xs text-inkMuted">
             Undangan ditujukan ke <strong className="text-ink">{invitedEmail}</strong>. Gunakan akun Google dengan email tersebut agar undangan otomatis terdeteksi.
+          </div>
+        )}
+        {authError && (
+          <div className="mb-4 rounded-lg border border-[#E8C9A8] bg-[#FBF0E6] px-3 py-2 text-left text-xs text-[#8A3E24]">
+            <p className="font-semibold mb-0.5">Gagal masuk, coba lagi.</p>
+            <p>
+              {authErrorReason
+                ? authErrorReason
+                : "Sesi login tidak berhasil dibuat. Kalau ini terus terjadi, kabari admin dengan menyebut waktu kejadian ini."}
+            </p>
           </div>
         )}
         <button
