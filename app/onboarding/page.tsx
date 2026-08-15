@@ -12,6 +12,7 @@ export default function OnboardingPage() {
   const [checkingExisting, setCheckingExisting] = useState(true);
   const [previewTeams, setPreviewTeams] = useState<string[]>([]);
   const [previewFields, setPreviewFields] = useState<string[]>([]);
+  const [previewWorkflow, setPreviewWorkflow] = useState<{ key: string; label: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [setupWarning, setSetupWarning] = useState<string | null>(null);
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function OnboardingPage() {
     if (!selected) {
       setPreviewTeams([]);
       setPreviewFields([]);
+      setPreviewWorkflow([]);
       return;
     }
     let cancelled = false;
@@ -73,12 +75,19 @@ export default function OnboardingPage() {
             default_structure?: {
               teams?: string[];
               custom_fields?: Array<{ field_label: string }>;
+              workflow_stages?: { key: string; label: string }[];
             };
           } | null;
         }) => {
           if (cancelled) return;
           setPreviewTeams(data?.default_structure?.teams ?? []);
           setPreviewFields((data?.default_structure?.custom_fields ?? []).map((f) => f.field_label));
+          // Kalau template belum ter-sync ke database ini (lihat migration
+          // 021_sync_sector_workflow_defaults.sql), tetap tampilkan preview
+          // yang benar dari sumber di kode — supaya calon pengguna tidak
+          // pernah melihat pratinjau workflow yang salah/generik.
+          const stagesFromDb = data?.default_structure?.workflow_stages ?? [];
+          setPreviewWorkflow(stagesFromDb.length >= 2 ? stagesFromDb : SECTOR_LABELS[selected].workflowStages);
         }
       );
     return () => {
@@ -180,6 +189,28 @@ export default function OnboardingPage() {
             }
             className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
           />
+
+          {previewWorkflow.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs font-semibold mb-2">Alur kerja default:</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {previewWorkflow.map((stage, i) => (
+                  <div key={stage.key} className="flex items-center gap-1.5">
+                    <span
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border"
+                      style={{ backgroundColor: SECTOR_LABELS[selected].accentSoft, borderColor: SECTOR_LABELS[selected].accent, color: SECTOR_LABELS[selected].accent }}
+                    >
+                      {stage.label}
+                    </span>
+                    {i < previewWorkflow.length - 1 && <span className="text-inkMuted text-xs">→</span>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-inkMuted mt-2">
+                Alur ini otomatis dipakai begitu organisasi dibuat, dan bisa disesuaikan kapan pun dari Pengaturan.
+              </p>
+            </div>
+          )}
 
           {previewTeams.length > 0 && (
             <div className="mt-4 pt-4 border-t border-border">

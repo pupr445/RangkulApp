@@ -243,3 +243,21 @@ Melengkapi 4 fitur inti Task Engine yang sebelumnya kosong: Subtask/Checklist, T
 **Sengaja belum dikerjakan (discope keluar):** badge progres checklist ("3/5") di kartu Kanban — butuh query batch di level server supaya tidak N+1, akan dikerjakan sebagai peningkatan performa terpisah, bukan buru-buru sekarang.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 11 — Sector Workflow Consistency (perbaikan fondasi, bukan fitur baru)
+Menindaklanjuti laporan "Pembahasan Workflow Default RANGKUL" — dikonfirmasi akurat 100% setelah diverifikasi langsung terhadap source code. Organisasi baru pada sektor Klinik (dan sektor lain) menerima workflow generik 3 tahap, bukan workflow spesifik sektor yang sudah dirancang.
+
+**Akar masalah (3 lapis, sesuai laporan):**
+1. `lib/labels/sectors.ts` menyimpan workflow LAMA sebagai fallback (Klinik: Terjadwal→Sedang Berlangsung→Selesai) — sementara `supabase/seed.sql` sudah punya workflow yang benar (Terjadwal→Pemeriksaan→Menunggu Hasil→Selesai). Fallback inilah yang aktif setiap kali `organizations.workflow_stages` kosong/tidak valid.
+2. `seed.sql` tidak otomatis ter-apply ke Supabase production — jadi walau source code benar, `sector_templates` di database production bisa saja masih menyimpan struktur lama (atau kosong sama sekali).
+3. Onboarding preview tidak menampilkan workflow sama sekali (cuma tim & custom field) — padahal workflow adalah pembeda paling penting dari Sector Adaptation Engine.
+
+**Perbaikan:**
+- `lib/labels/sectors.ts` — `workflowStages` untuk Sekolah, Klinik, Bisnis, Masjid, Komunitas diperbarui agar identik dengan `seed.sql` (Sekolah & Bisnis sekarang 5 tahap, Klinik & Masjid/Komunitas 4 tahap). Sektor "Lainnya" sengaja dibiarkan generik 3 tahap (memang dirancang sebagai fallback kustom).
+- **Migration baru `021_sync_sector_workflow_defaults.sql`** — menambahkan unique constraint `sector_type` yang selama ini belum ada (disebut sebagai risiko di komentar `seed.sql`), lalu upsert `sector_templates` dengan workflow terbaru. **Sengaja sama sekali tidak menyentuh tabel `organizations`** — organisasi yang sudah ada (baik yang sudah dikustomisasi admin maupun yang terlanjur dapat workflow lama) tidak diubah paksa oleh migrasi ini, sesuai prinsip "default workflow" vs "custom workflow organisasi" harus tetap terpisah.
+- `app/onboarding/page.tsx` — preview sekarang menampilkan alur kerja default secara visual (rangkaian tahap dengan panah) sebelum organisasi dibuat, dengan fallback ke `SECTOR_LABELS` dari kode kalau `sector_templates` di database ternyata belum ter-sync (defense in depth, bukan cuma mengandalkan migrasi berhasil jalan).
+- Konsistensi Kanban → Task → Notification → Reporting tidak perlu perbaikan terpisah — semuanya sudah membaca dari sumber yang sama (`organizations.workflow_stages`), jadi otomatis ikut benar begitu sumber datanya benar.
+
+**PENTING — organisasi LAMA yang sudah kadung dibuat dengan workflow 3-tahap tidak otomatis berubah** (sesuai desain, lihat di atas). Kalau organisasi test/demo kamu sendiri perlu di-reset ke workflow sektor yang benar, itu perlu tindakan manual terpisah (update `workflow_stages` organisasi itu lewat Pengaturan atau SQL manual) — BUKAN dengan menjalankan ulang migrasi ini.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
