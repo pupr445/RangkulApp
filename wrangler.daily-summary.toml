@@ -1,0 +1,8 @@
+name = "rangkul-daily-summary"
+main = "workers/daily-summary/index.ts"
+compatibility_date = "2026-08-14"
+
+[triggers]
+# 23:00 UTC = 06:00 WIB keesokan harinya — ringkasan siap dibaca begitu
+# pengguna mulai kerja pagi hari.
+crons = ["0 23 * * *"]

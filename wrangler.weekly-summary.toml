@@ -1,0 +1,8 @@
+name = "rangkul-weekly-summary"
+main = "workers/weekly-summary/index.ts"
+compatibility_date = "2026-08-14"
+
+[triggers]
+# 23:00 UTC Minggu = 06:00 WIB Senin pagi — ringkasan mingguan siap
+# dibaca di awal pekan kerja.
+crons = ["0 23 * * SUN"]

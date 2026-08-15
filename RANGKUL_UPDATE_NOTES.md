@@ -261,3 +261,21 @@ Menindaklanjuti laporan "Pembahasan Workflow Default RANGKUL" — dikonfirmasi a
 **PENTING — organisasi LAMA yang sudah kadung dibuat dengan workflow 3-tahap tidak otomatis berubah** (sesuai desain, lihat di atas). Kalau organisasi test/demo kamu sendiri perlu di-reset ke workflow sektor yang benar, itu perlu tindakan manual terpisah (update `workflow_stages` organisasi itu lewat Pengaturan atau SQL manual) — BUKAN dengan menjalankan ulang migrasi ini.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 12 — Daily/Weekly Automation Summary (Fase 15 Roadmap)
+Ringkasan otomatis untuk Owner & Manager tiap organisasi, memakai pola Cloudflare Worker scheduler yang sudah terbukti jalan dari fitur deadline-reminder.
+
+**Migration baru:** `022_notification_summary_type.sql` — tambah tipe notifikasi `summary`.
+
+**Endpoint baru:** `app/api/cron/daily-summary` — satu endpoint dipakai untuk harian MAUPUN mingguan (dibedakan lewat `?period=daily|weekly`), supaya logikanya tidak ditulis dua kali. Untuk tiap organisasi yang punya minimal satu task: hitung total/selesai/terlambat/jatuh tempo hari ini, kirim satu notifikasi ke Owner + semua Manager organisasi itu (bukan ke semua anggota — ini laporan level pemimpin, konsisten dengan Leader Dashboard). Organisasi kosong dilewati.
+
+**Worker baru:**
+- `rangkul-daily-summary` — jalan tiap hari jam 23:00 UTC (06:00 WIB).
+- `rangkul-weekly-summary` — jalan tiap Senin jam 23:00 UTC (06:00 WIB Senin).
+Keduanya memanggil endpoint yang sama, cuma beda parameter `period`.
+
+**Refactor kecil:** `resolveFinalStageKey` yang tadinya cuma ada di endpoint deadline-reminders sekarang jadi helper bersama di `lib/data/workflow-final-stage.ts`, dipakai juga oleh daily-summary — menghindari duplikasi logika penentuan "stage mana yang berarti selesai".
+
+**Catatan scope yang disengaja:** ringkasan ini adalah SNAPSHOT kondisi saat ini (total/selesai/terlambat/jatuh tempo), BUKAN delta "apa yang berubah sejak kemarin" — karena tabel `tasks` belum punya kolom `updated_at`/`completed_at` untuk melacak itu secara akurat. Delta yang lebih detail bisa jadi peningkatan terpisah nanti, bukan dipaksakan sekarang dengan asumsi yang tidak akurat.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.

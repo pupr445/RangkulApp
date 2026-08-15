@@ -28,6 +28,7 @@ const TYPE_LABEL: Record<NotificationType, string> = {
   deadline: "Deadline",
   overdue: "Terlambat",
   invitation: "Undangan diterima",
+  summary: "Ringkasan",
 };
 
 function authorized(request: Request): boolean {

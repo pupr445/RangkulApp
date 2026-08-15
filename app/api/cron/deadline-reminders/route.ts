@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveFinalStageKey } from "@/lib/data/workflow-final-stage";
 
 /**
  * GET /api/cron/deadline-reminders
@@ -32,13 +33,6 @@ function addDays(date: Date, days: number): Date {
 function periodBucket(date: Date, everyDays: number): number {
   const epochDays = Math.floor(date.getTime() / 86_400_000);
   return Math.floor(epochDays / everyDays);
-}
-
-function resolveFinalStageKey(workflowStages: unknown): string | null {
-  if (!Array.isArray(workflowStages) || workflowStages.length === 0) return null;
-  const stages = workflowStages as Array<{ key?: unknown; final?: unknown }>;
-  const finalStage = stages.find((s) => s.final === true) ?? stages[stages.length - 1];
-  return typeof finalStage?.key === "string" ? finalStage.key : null;
 }
 
 export async function GET(request: Request) {

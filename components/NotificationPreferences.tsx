@@ -12,6 +12,7 @@ const TOGGLE_ITEMS: { type: NotificationType; label: string; hint: string }[] = 
   { type: "deadline", label: "Pengingat deadline", hint: "H-1 dan hari-H tugas yang kamu pegang." },
   { type: "overdue", label: "Tugas terlambat", hint: "Pengingat berkala untuk tugas yang lewat tenggat." },
   { type: "invitation", label: "Undangan diterima", hint: "Saat orang yang kamu undang bergabung." },
+  { type: "summary", label: "Ringkasan harian/mingguan", hint: "Snapshot progres organisasi (untuk Owner & Manager)." },
 ];
 
 export function NotificationPreferences({

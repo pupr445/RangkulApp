@@ -28,6 +28,7 @@ const FILTERS: { key: "all" | "unread" | NotificationType; label: string }[] = [
   { key: "deadline", label: "Deadline" },
   { key: "overdue", label: "Terlambat" },
   { key: "invitation", label: "Undangan" },
+  { key: "summary", label: "Ringkasan" },
 ];
 
 export default function NotificationsPage() {
