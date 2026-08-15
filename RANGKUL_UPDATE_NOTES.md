@@ -214,3 +214,10 @@ Melengkapi Notification Rules & Notification Preferences yang sebelumnya jadi ce
 **Belum dikerjakan (sengaja discope keluar dari wave ini):** Web Push notification — butuh VAPID keys, service worker, dan UX permission browser yang jauh lebih besar dari sisa item Fase 5; akan dikerjakan terpisah supaya kualitasnya tidak dikompromikan demi buru-buru selesai.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 9.1 — Hotfix: middleware memblokir semua endpoint /api/cron
+Bug kritis ditemukan lewat pengujian langsung: middleware.ts mengalihkan SEMUA request tanpa sesi login ke /login — termasuk panggilan dari Cloudflare Cron Trigger yang memang tidak pernah punya cookie sesi (autentikasinya lewat header `x-cron-secret`, dicek di dalam kode masing-masing route, bukan lewat middleware). Akibatnya endpoint `/api/cron/deadline-reminders` dan `/api/cron/notification-digest` SELALU membalas 307 redirect ke /login, tidak pernah benar-benar mengecek secret atau menjalankan logikanya — ini akar penyebab worker rangkul-deadline-reminder menunjukkan "19 requests, 19 errors" di dashboard Cloudflare.
+
+**Fix:** `/api/cron` ditambahkan ke PUBLIC_PATHS di middleware.ts, sehingga middleware tidak lagi ikut campur pada path ini — autentikasi endpoint cron sepenuhnya diserahkan ke pengecekan `x-cron-secret` di dalam masing-masing route handler, sesuai desain awal.
+
+Diverifikasi: `npm run typecheck` lolos bersih.

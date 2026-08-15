@@ -2,3 +2,16 @@ name = "rangkul-app"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
+
+# Variabel PUBLIK (NEXT_PUBLIC_*) — sengaja ditaruh di sini, bukan rahasia,
+# karena nilainya memang ikut tertanam ke bundle JS yang dikirim ke browser.
+# GANTI nilai di bawah ini dengan URL & anon key project Supabase kamu.
+#
+# JANGAN PERNAH taruh SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET, atau
+# RESEND_API_KEY di sini — file ini ikut ter-commit ke GitHub (publik!).
+# Tiga secret itu TETAP diisi lewat Cloudflare Dashboard > Settings >
+# Variables and secrets > tipe Secret, seperti yang sudah kamu lakukan.
+[vars]
+NEXT_PUBLIC_SUPABASE_URL = "https://ghjbilootmenpnenhtov.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoamJpbG9vdG1lbnBuZW5odG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyMDIwMDIsImV4cCI6MjEwMTc3ODAwMn0.at9TMwY8wAj0uAorMVKZ0JedOT4yf3NGfcgKX7B8g4I"
+

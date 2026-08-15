@@ -5,10 +5,24 @@ import { NextResponse, type NextRequest } from "next/server";
 // data terkait user yang login (organisasi baru dengan owner_id-nya),
 // jadi wajib sudah login. Kalau tidak, middleware di bawah akan
 // mengalihkan ke /login terlebih dahulu.
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+//
+// "/api/cron" JUGA public dari sisi middleware — endpoint-endpoint di
+// bawah path ini dipanggil oleh Cloudflare Cron Trigger (worker) lewat
+// HTTP biasa tanpa cookie sesi login sama sekali, dan mengautentikasi
+// dirinya sendiri lewat header x-cron-secret di dalam kode route-nya
+// masing-masing. Kalau tidak dikecualikan di sini, middleware akan
+// mengalihkan setiap panggilan cron ke /login sebelum sempat sampai ke
+// pengecekan secret-nya — persis bug yang membuat semua panggilan worker
+// deadline-reminder gagal (307 redirect) sebelum perbaikan ini.
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/cron"];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 export async function middleware(request: NextRequest) {
+  const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  if (isPublic) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -34,9 +48,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
-
-  if (!user && !isPublic) {
+  if (!user) {
     const redirectUrl = new URL("/login", request.url);
     return NextResponse.redirect(redirectUrl);
   }
