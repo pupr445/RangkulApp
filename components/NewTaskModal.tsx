@@ -11,6 +11,7 @@ import { getInitialWorkflowStage, workflowStageColor } from "@/lib/data/workflow
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
+import { TaskTemplate, addChecklistItem, fetchTaskTemplates, saveTaskTemplate } from "@/lib/data/task-engine";
 
 export function NewTaskModal({
   open,
@@ -45,6 +46,51 @@ export function NewTaskModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [pendingChecklist, setPendingChecklist] = useState<{ label: string }[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
+
+  useEffect(() => {
+    if (open) fetchTaskTemplates(supabase, organizationId).then(setTemplates);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, organizationId]);
+
+  function applyTemplate(id: string) {
+    setSelectedTemplateId(id);
+    const t = templates.find((tpl) => tpl.id === id);
+    if (!t) return;
+    setTitle(t.title);
+    setTag(t.tag ?? "");
+    setCustomValues(t.custom_data ?? {});
+    setPendingChecklist(t.checklist_items ?? []);
+  }
+
+  async function handleSaveAsTemplate() {
+    if (!templateName.trim() || !title.trim()) return;
+    setSavingTemplate(true);
+    const { data: userData } = await supabase.auth.getUser();
+    const u = userData?.user;
+    const { error: saveError } = await saveTaskTemplate(supabase, {
+      organizationId,
+      name: templateName.trim(),
+      title: title.trim(),
+      tag,
+      checklistItems: pendingChecklist,
+      customData: customValues,
+      userId: u?.id ?? "",
+    });
+    setSavingTemplate(false);
+    if (!saveError) {
+      setTemplateName("");
+      setTemplateSaved(true);
+      setTemplates(await fetchTaskTemplates(supabase, organizationId));
+      setTimeout(() => setTemplateSaved(false), 2000);
+    }
+  }
+
   // Setiap modal dibuka, isi tenggat dari defaultDueDate kalau ada (mis.
   // klik tanggal tertentu di Kalender lalu "Tambah Tugas").
   useEffect(() => {
@@ -63,6 +109,9 @@ export function NewTaskModal({
     setTeamId("");
     setCustomValues({});
     setError(null);
+    setSelectedTemplateId("");
+    setPendingChecklist([]);
+    setTemplateName("");
     onClose();
   }
 
@@ -101,6 +150,20 @@ export function NewTaskModal({
 
     const { data: userData } = await supabase.auth.getUser();
     const u = userData?.user;
+    const newTaskId = (inserted as { id: string } | null)?.id ?? null;
+
+    if (newTaskId && pendingChecklist.length > 0 && u) {
+      pendingChecklist.forEach((item, i) => {
+        addChecklistItem(supabase, {
+          taskId: newTaskId,
+          organizationId,
+          label: item.label,
+          position: i,
+          userId: u.id,
+        });
+      });
+    }
+
     if (u) {
       const actorName = (u.user_metadata?.full_name as string | undefined) ?? u.email?.split("@")[0] ?? "Seseorang";
       logActivity(supabase, {
@@ -146,6 +209,24 @@ export function NewTaskModal({
         </p>
 
         <div className="space-y-4">
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold mb-1.5">Mulai dari template</label>
+              <select
+                value={selectedTemplateId}
+                onChange={(e) => applyTemplate(e.target.value)}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+              >
+                <option value="">Kosong (tanpa template)</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold mb-1.5">Judul</label>
             <input
@@ -273,6 +354,40 @@ export function NewTaskModal({
               ))}
             </div>
           )}
+
+          {pendingChecklist.length > 0 && (
+            <div className="border-t border-border pt-4">
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-inkMuted mb-2">
+                Checklist dari template ({pendingChecklist.length} item)
+              </p>
+              <ul className="space-y-1">
+                {pendingChecklist.map((item, i) => (
+                  <li key={i} className="text-sm text-inkMuted">• {item.label}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="border-t border-border pt-4">
+            <label className="block text-xs font-semibold mb-1.5">Simpan isian ini sebagai template</label>
+            <div className="flex gap-2">
+              <input
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="Nama template, mis. Onboarding Karyawan Baru"
+                className="flex-1 border border-border rounded-lg px-3 py-1.5 text-sm outline-none focus:border-ink"
+              />
+              <button
+                type="button"
+                onClick={handleSaveAsTemplate}
+                disabled={!templateName.trim() || !title.trim() || savingTemplate}
+                className="text-xs font-semibold px-3 rounded-lg border border-border disabled:opacity-40 hover:bg-surfaceAlt shrink-0"
+              >
+                {savingTemplate ? "Menyimpan…" : "Simpan"}
+              </button>
+            </div>
+            {templateSaved && <p className="text-xs text-[#2F9E7A] mt-1.5">✓ Template tersimpan</p>}
+          </div>
 
           {error && <p className="text-xs text-[#8A3E24]">{error}</p>}
         </div>

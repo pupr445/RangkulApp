@@ -221,3 +221,25 @@ Bug kritis ditemukan lewat pengujian langsung: middleware.ts mengalihkan SEMUA r
 **Fix:** `/api/cron` ditambahkan ke PUBLIC_PATHS di middleware.ts, sehingga middleware tidak lagi ikut campur pada path ini — autentikasi endpoint cron sepenuhnya diserahkan ke pengecekan `x-cron-secret` di dalam masing-masing route handler, sesuai desain awal.
 
 Diverifikasi: `npm run typecheck` lolos bersih.
+
+## Wave 10 — Task Engine (Fase 2 Roadmap)
+Melengkapi 4 fitur inti Task Engine yang sebelumnya kosong: Subtask/Checklist, Task Dependency, Task Template, Task Watcher.
+
+**Migration baru:** `020_task_engine.sql`
+- `task_checklist_items` — subtask/checklist per task, RLS mengikuti akses ke task induknya (reuse `can_access_team`).
+- `task_dependencies` — relasi "task A diblokir oleh task B", validasi tidak bisa self-reference.
+- `task_templates` — blueprint task (judul, tag, checklist, custom field) yang bisa dipakai ulang cepat.
+- `task_watchers` — user bisa "mengikuti" task tanpa harus jadi assignee, RLS: siapa pun anggota tim yang task-nya bisa dilihat, boleh lihat daftar watcher; tapi hanya bisa tambah/hapus DIRINYA SENDIRI sebagai watcher.
+
+**Kode baru:**
+- `lib/data/task-engine.ts` — helper CRUD untuk keempat fitur di atas.
+- `components/TaskEngineWidgets.tsx` — `TaskChecklist`, `TaskDependencies`, `TaskWatchToggle`, dipasang di `TaskDetailModal.tsx` (Board, TaskList, CalendarView semua diperbarui untuk meneruskan `allTasks` sebagai pemilih dependency).
+- `NewTaskModal.tsx` — dropdown "Mulai dari template" (isi form + checklist otomatis dari template), dan opsi "Simpan isian ini sebagai template".
+
+**Aturan baru:** task tidak bisa dipindahkan ke stage FINAL kalau masih ada dependency yang belum selesai — divalidasi di `TaskDetailModal.handleSave` sebelum update dikirim ke database, dengan pesan error yang jelas.
+
+**Notifikasi:** perubahan status task sekarang juga memberi tahu SEMUA watcher-nya (bukan cuma assignee), lewat tipe notifikasi `status_changed` yang sudah ada.
+
+**Sengaja belum dikerjakan (discope keluar):** badge progres checklist ("3/5") di kartu Kanban — butuh query batch di level server supaya tidak N+1, akan dikerjakan sebagai peningkatan performa terpisah, bukan buru-buru sekarang.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.

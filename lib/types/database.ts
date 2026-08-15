@@ -78,6 +78,10 @@ export type Database = {
       team_members: LooseTable;
       organization_templates: LooseTable;
       notification_email_prefs: LooseTable;
+      task_checklist_items: LooseTable;
+      task_dependencies: LooseTable;
+      task_templates: LooseTable;
+      task_watchers: LooseTable;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

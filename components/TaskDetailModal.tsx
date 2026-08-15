@@ -11,6 +11,8 @@ import { logActivity } from "@/lib/data/activity-log";
 import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
 import { canTransitionWorkflow, workflowStageColor } from "@/lib/data/workflows";
+import { fetchWatchers } from "@/lib/data/task-engine";
+import { TaskChecklist, TaskDependencies, TaskWatchToggle } from "@/components/TaskEngineWidgets";
 
 export interface EditableTask {
   id: string;
@@ -30,6 +32,7 @@ export function TaskDetailModal({
   members = [],
   customFields = [],
   teams = [],
+  allTasks = [],
 }: {
   task: EditableTask | null;
   onClose: () => void;
@@ -37,6 +40,8 @@ export function TaskDetailModal({
   members?: MemberOption[];
   customFields?: CustomFieldDef[];
   teams?: TeamOption[];
+  /** Daftar task lain di organisasi ini, dipakai untuk pemilih Task Dependency. */
+  allTasks?: { id: string; title: string; status: string }[];
 }) {
   const labels = useLabels();
   const workflowStages = useWorkflowStages();
@@ -44,6 +49,9 @@ export function TaskDetailModal({
   const currentUserId = useCurrentUserId();
   const router = useRouter();
   const supabase = createClient();
+
+  const finalStageKey = (workflowStages.find((s) => s.final)?.key ?? workflowStages[workflowStages.length - 1]?.key) ?? null;
+  const [blockedByDeps, setBlockedByDeps] = useState(false);
 
   const [title, setTitle] = useState(task?.title ?? "");
   const [tag, setTag] = useState(task?.tag ?? "");
@@ -89,6 +97,12 @@ export function TaskDetailModal({
 
     if (statusChanged && !canTransitionWorkflow(workflowStages, task.status, status)) {
       setError(`Status tidak dapat dipindahkan dari ${workflowStages.find((s) => s.key === task.status)?.label ?? task.status} ke ${workflowStages.find((s) => s.key === status)?.label ?? status}.`);
+      setSaving(false);
+      return;
+    }
+
+    if (statusChanged && finalStageKey && status === finalStageKey && blockedByDeps) {
+      setError(`${labels.taskLabel} ini masih diblokir oleh tugas prasyarat yang belum selesai — selesaikan dulu tugas di bagian "Diblokir oleh" sebelum menandai ini selesai.`);
       setSaving(false);
       return;
     }
@@ -187,6 +201,22 @@ export function TaskDetailModal({
           link: "/dashboard/tasks",
         });
       }
+
+      // Watcher juga diberi tahu, terlepas dari siapa assignee-nya —
+      // itulah gunanya "mengikuti" sebuah tugas.
+      const watcherIds = await fetchWatchers(supabase, task.id);
+      for (const watcherId of watcherIds) {
+        if (watcherId === currentUserId || watcherId === assigneeId) continue; // sudah/tidak perlu notif ganda
+        notifyUser(supabase, {
+          organizationId,
+          recipientId: watcherId,
+          actorId: currentUserId,
+          actorName,
+          type: "status_changed",
+          content: `${actorName} mengubah status "${title.trim()}" menjadi ${workflowStages.find((s) => s.key === status)?.label ?? status}.`,
+          link: "/dashboard/tasks",
+        });
+      }
     }
 
     if (assigneeChanged && assigneeId && assigneeId !== currentUserId) {
@@ -246,10 +276,17 @@ export function TaskDetailModal({
         className="bg-surface rounded-card shadow-card w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold mb-1">Edit {labels.taskLabel}</h2>
-        <p className="text-xs text-inkMuted mb-5">Ubah detail atau hapus {labels.taskLabel.toLowerCase()} ini.</p>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div>
+            <h2 className="text-lg font-bold">Edit {labels.taskLabel}</h2>
+            <p className="text-xs text-inkMuted mt-0.5">Ubah detail atau hapus {labels.taskLabel.toLowerCase()} ini.</p>
+          </div>
+          {currentUserId && (
+            <TaskWatchToggle taskId={task.id} organizationId={organizationId} userId={currentUserId} />
+          )}
+        </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 mt-5">
           <div>
             <label className="block text-xs font-semibold mb-1.5">Judul</label>
             <input
@@ -374,6 +411,16 @@ export function TaskDetailModal({
               ))}
             </div>
           )}
+
+          <TaskChecklist taskId={task.id} organizationId={organizationId} userId={currentUserId ?? ""} />
+
+          <TaskDependencies
+            taskId={task.id}
+            organizationId={organizationId}
+            otherTasks={allTasks}
+            finalStageKey={finalStageKey}
+            onBlockedChange={setBlockedByDeps}
+          />
 
           {error && <p className="text-xs text-[#8A3E24]">{error}</p>}
           {!canDelete && (

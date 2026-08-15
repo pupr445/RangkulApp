@@ -177,6 +177,7 @@ export function TaskList({
             members={members}
             customFields={customFields}
             teams={teams}
+            allTasks={tasks.map((t) => ({ id: t.id, title: t.title, status: t.status }))}
           />
         </>
       )}

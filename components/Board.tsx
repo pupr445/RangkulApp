@@ -248,6 +248,7 @@ export function Board({
             members={members}
             customFields={customFields}
             teams={teams}
+            allTasks={columns.flatMap((c) => c.cards.map((card) => ({ id: card.id, title: card.title, status: c.id })))}
           />
         </>
       )}
