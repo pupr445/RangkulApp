@@ -82,6 +82,7 @@ export type Database = {
       task_dependencies: LooseTable;
       task_templates: LooseTable;
       task_watchers: LooseTable;
+      message_pins: LooseTable;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

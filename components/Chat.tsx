@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { TeamOption } from "@/lib/data/teams";
 import {
@@ -23,7 +23,13 @@ export interface ChatMessage {
   sender_id: string | null;
   recipient_id: string | null;
   team_id?: string | null;
+  reply_to_id?: string | null;
   created_at: string;
+}
+
+interface PinRow {
+  message_id: string;
+  pinned_by: string | null;
 }
 
 export function Chat({
@@ -45,6 +51,7 @@ export function Chat({
   initialConversation: string;
 }) {
   const labels = useLabels();
+  const canManage = useCanManage();
   const supabase = createClient();
 
   const otherMembers = useMemo(() => members.filter((m) => m.id !== currentUserId), [members, currentUserId]);
@@ -67,8 +74,11 @@ export function Chat({
   const [otherLastRead, setOtherLastRead] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const isOrgWide = activeConvo === TEAM_CONVERSATION_KEY;
   const activeTeamId = isTeamChannelKey(activeConvo) ? teamIdFromChannelKey(activeConvo) : null;
@@ -90,6 +100,65 @@ export function Chat({
         (m.sender_id === activeConvo && m.recipient_id === currentUserId)
     );
   }, [allMessages, isOrgWide, isTeamChannel, activeTeamId, activeConvo, currentUserId]);
+
+  const messageById = useMemo(() => new Map(allMessages.map((m) => [m.id, m])), [allMessages]);
+  const pinnedMessages = useMemo(
+    () => visibleMessages.filter((m) => pinnedIds.has(m.id)),
+    [visibleMessages, pinnedIds]
+  );
+  // Channel Diskusi Umum/Tim: hanya manager yang boleh pin. Chat privat:
+  // kedua pihak boleh — cocok dengan aturan message_pins_insert di database.
+  const canPin = isDM || canManage;
+
+  function scrollToMessage(id: string) {
+    messageRefs.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // Ambil semua pin yang boleh dilihat user ini (RLS yang membatasi
+  // cakupannya) — cukup sekali saat komponen dimuat, karena
+  // `pinnedMessages` sudah otomatis tersaring ulang per percakapan lewat
+  // `visibleMessages`.
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("message_pins")
+      .select("message_id")
+      .then(({ data }: { data: { message_id: string }[] | null }) => {
+        if (active) setPinnedIds(new Set((data ?? []).map((r) => r.message_id)));
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function togglePin(message: ChatMessage) {
+    if (pinnedIds.has(message.id)) {
+      setPinnedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(message.id);
+        return next;
+      });
+      await supabase.from("message_pins").delete().eq("message_id", message.id);
+    } else {
+      setPinnedIds((prev) => new Set(prev).add(message.id));
+      const { error } = await supabase
+        .from("message_pins")
+        .insert([{ message_id: message.id, organization_id: organizationId, pinned_by: currentUserId }]);
+      if (error) {
+        setPinnedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(message.id);
+          return next;
+        });
+      }
+    }
+  }
+
+  async function deleteMessage(id: string) {
+    setAllMessages((prev) => prev.filter((m) => m.id !== id));
+    await supabase.from("messages").delete().eq("id", id);
+  }
 
   // Realtime: dengarkan pesan baru di seluruh organisasi, saring di client
   // sesuai percakapan yang sedang dibuka.
@@ -148,6 +217,8 @@ export function Chat({
     setSending(true);
     setDraft("");
     setMentionQuery(null);
+    const replyToId = replyingTo?.id ?? null;
+    setReplyingTo(null);
 
     const { error } = await supabase.from("messages").insert([
       {
@@ -156,6 +227,7 @@ export function Chat({
         sender_name: currentUserName,
         recipient_id: isDM ? activeConvo : null,
         team_id: isTeamChannel ? activeTeamId : null,
+        reply_to_id: replyToId,
         content,
       },
     ]);
@@ -333,6 +405,24 @@ export function Chat({
           </p>
         </div>
 
+        {pinnedMessages.length > 0 && (
+          <div className="border-b border-border bg-surfaceAlt/60 px-6 md:px-8 py-2 overflow-x-auto">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-inkMuted font-semibold shrink-0">📌 Disematkan:</span>
+              {pinnedMessages.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => scrollToMessage(m.id)}
+                  className="shrink-0 max-w-[220px] truncate px-2.5 py-1 rounded-full border border-border bg-surface hover:bg-surfaceAlt transition"
+                  title={m.content}
+                >
+                  {m.content}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-6 md:px-8 py-4 space-y-3">
           {visibleMessages.length === 0 && (
             <p className="text-sm text-inkMuted text-center mt-10">Belum ada pesan. Mulai percakapan pertama.</p>
@@ -341,15 +431,36 @@ export function Chat({
             const isMine = m.sender_id === currentUserId;
             const isLastMine = isMine && idx === visibleMessages.length - 1;
             const wasRead = isLastMine && isDM && otherLastRead && new Date(otherLastRead) >= new Date(m.created_at);
+            const repliedTo = m.reply_to_id ? messageById.get(m.reply_to_id) : null;
+            const isPinned = pinnedIds.has(m.id);
+            const canDelete = isMine || (!isTeam ? false : canManage);
             return (
-              <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+              <div
+                key={m.id}
+                ref={(el) => {
+                  if (el) messageRefs.current.set(m.id, el);
+                  else messageRefs.current.delete(m.id);
+                }}
+                className={`flex group ${isMine ? "justify-end" : "justify-start"}`}
+              >
                 <div className="max-w-[75%]">
                   <div
-                    className={`rounded-2xl px-4 py-2.5 text-sm ${isMine ? "text-white" : "bg-surfaceAlt text-ink"}`}
-                    style={isMine ? { backgroundColor: labels.accent } : undefined}
+                    className={`rounded-2xl px-4 py-2.5 text-sm ${isMine ? "text-white" : "bg-surfaceAlt text-ink"} ${isPinned ? "ring-2 ring-offset-1" : ""}`}
+                    style={{
+                      backgroundColor: isMine ? labels.accent : undefined,
+                      ...(isPinned ? { boxShadow: `0 0 0 2px ${labels.accent}` } : {}),
+                    }}
                   >
                     {!isMine && isTeam && (
                       <div className="text-[11px] font-semibold mb-0.5 opacity-70">{m.sender_name ?? "Anggota"}</div>
+                    )}
+                    {repliedTo && (
+                      <button
+                        onClick={() => scrollToMessage(repliedTo.id)}
+                        className={`block w-full text-left mb-1.5 pl-2 border-l-2 text-xs opacity-80 truncate ${isMine ? "border-white/50" : "border-ink/20"}`}
+                      >
+                        {repliedTo.sender_name ?? "Anggota"}: {repliedTo.content}
+                      </button>
                     )}
                     <div>
                       {splitMentionSegments(m.content, memberNames).map((seg, i) =>
@@ -367,8 +478,25 @@ export function Chat({
                       )}
                     </div>
                   </div>
+
+                  <div className={`flex items-center gap-2.5 mt-1 px-1 opacity-0 group-hover:opacity-100 transition ${isMine ? "justify-end" : "justify-start"}`}>
+                    <button onClick={() => setReplyingTo(m)} className="text-[11px] text-inkMuted hover:text-ink font-medium">
+                      Balas
+                    </button>
+                    {canPin && (
+                      <button onClick={() => togglePin(m)} className="text-[11px] text-inkMuted hover:text-ink font-medium">
+                        {isPinned ? "Lepas pin" : "Pin"}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button onClick={() => deleteMessage(m.id)} className="text-[11px] text-inkMuted hover:text-[#8A3E24] font-medium">
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+
                   {isLastMine && !isTeam && (
-                    <div className="text-[10px] text-inkMuted text-right mt-1 pr-1">
+                    <div className="text-[10px] text-inkMuted text-right mt-0.5 pr-1">
                       {wasRead ? "✓✓ Dibaca" : "✓ Terkirim"}
                     </div>
                   )}
@@ -380,6 +508,16 @@ export function Chat({
         </div>
 
         <div className="border-t border-border p-4 relative">
+          {replyingTo && (
+            <div className="flex items-center justify-between gap-2 mb-2 px-3 py-2 rounded-lg bg-surfaceAlt text-xs">
+              <span className="truncate">
+                Membalas <strong>{replyingTo.sender_name ?? "Anggota"}</strong>: {replyingTo.content}
+              </span>
+              <button onClick={() => setReplyingTo(null)} className="text-inkMuted hover:text-ink shrink-0 px-1">
+                ✕
+              </button>
+            </div>
+          )}
           {mentionSuggestions.length > 0 && (
             <div className="absolute bottom-full left-4 mb-1 bg-surface border border-border rounded-lg shadow-card overflow-hidden w-56">
               {mentionSuggestions.map((m) => (

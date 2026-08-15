@@ -293,3 +293,22 @@ Bug ditemukan lewat video: login dengan akun Google terpental balik ke halaman l
 3. Kalau salah satu belum benar, sekarang errornya akan TERLIHAT di halaman login setelah Wave 13 ini di-deploy — pesan itu akan langsung menunjukkan akar masalah sebenarnya, tinggal dikirim ke Claude untuk diagnosis lanjutan.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 14 — Chat Engine lanjutan (Fase 7 Roadmap)
+Melengkapi Chat: Thread/Reply, Pin Message, Message Permission. Mention & Read Receipt sudah ada sejak sebelumnya, tidak diulang.
+
+**Migration baru:** `023_chat_engine.sql`
+- `messages.reply_to_id` — balasan ke pesan lain, tampil sebagai quote di dalam bubble.
+- Tabel baru `message_pins` — sengaja terpisah dari `messages` (bukan kolom `is_pinned`) supaya izin pin diatur lewat RLS insert/delete tabel ini, TANPA perlu membuka izin UPDATE pada konten pesan itu sendiri (yang memang sengaja tidak bisa diedit siapa pun, termasuk pengirimnya).
+- Policy `messages_delete` baru — pengirim boleh hapus pesannya sendiri (channel maupun DM); Owner/Manager boleh hapus pesan siapa pun di Diskusi Umum/Tim untuk moderasi, TAPI TIDAK BOLEH menghapus pesan DM orang lain (privasi percakapan pribadi tetap dijaga).
+
+**Aturan pin yang disengaja:** di Diskusi Umum/Tim, hanya Owner/Manager yang boleh pin (mencegah spam pin di ruang bersama). Di chat privat, kedua pihak DM boleh pin pesan masing-masing.
+
+**UI (`components/Chat.tsx`):**
+- Tombol "Balas" muncul saat hover pesan → menampilkan preview kutipan di atas kolom input → pesan baru tersimpan dengan `reply_to_id`, ditampilkan sebagai quote yang bisa diklik untuk scroll ke pesan asli.
+- Strip "📌 Disematkan" di atas daftar pesan, menampilkan semua pesan yang di-pin di percakapan itu, bisa diklik untuk scroll langsung.
+- Tombol "Hapus" muncul sesuai izin (constraint UI-nya cocok persis dengan RLS `messages_delete` — bukan cuma disembunyikan di UI tapi juga ditegakkan di database).
+
+**Sengaja belum dikerjakan (di luar scope wave ini):** file attachment di chat, message search. Keduanya butuh desain terpisah (attachment: storage + preview; search: full-text search index), akan dikerjakan sebagai wave sendiri supaya tidak dikompromikan kualitasnya.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
