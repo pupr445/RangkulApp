@@ -3,13 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels, useSector } from "@/lib/labels/LabelProvider";
+import { useLabels, useSector, useCurrentUserRole, useSectorPosition } from "@/lib/labels/LabelProvider";
 import { MobileNav } from "@/components/MobileNav";
 import { NotificationBell } from "@/components/NotificationBell";
 
 export function TopBar({ userName, organizationId }: { userName: string; organizationId: string }) {
   const labels = useLabels();
   const sector = useSector();
+  const role = useCurrentUserRole();
+  const sectorPosition = useSectorPosition();
+  // Sengaja pakai istilah generik (Owner/Manager/Member), BUKAN
+  // labels.ownerRole/managerRole/memberRole — istilah sektoral itu
+  // untuk Sector Position (di bawah), bukan System Role. Mencampur
+  // keduanya di sini persis bug yang dilaporkan (header selalu
+  // menampilkan "Dokter Kepala" untuk SEMUA orang, padahal itu untuk
+  // Owner saja dan sebenarnya posisi sektoral, bukan system role).
+  const ROLE_DISPLAY: Record<typeof role, string> = { owner: "Owner", manager: "Manager", member: "Member" };
+  const roleLabel = ROLE_DISPLAY[role];
   const router = useRouter();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -69,7 +79,9 @@ export function TopBar({ userName, organizationId }: { userName: string; organiz
           </div>
           <div className="leading-tight text-left">
             <div className="text-sm font-semibold">{userName}</div>
-            <div className="text-xs text-inkMuted">{labels.ownerRole}</div>
+            <div className="text-xs text-inkMuted">
+              {sectorPosition ? `${sectorPosition} · ${roleLabel}` : roleLabel}
+            </div>
           </div>
         </button>
 

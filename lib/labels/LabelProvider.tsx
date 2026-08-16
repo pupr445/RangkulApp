@@ -12,6 +12,8 @@ interface LabelContextValue {
   role: OrgRole;
   userId: string;
   workflowStages: WorkflowStage[];
+  /** Posisi sektoral user yang login sekarang (mis. "Dokter", "Guru") — terpisah dari system role. Null kalau belum diisi. */
+  sectorPosition: string | null;
 }
 
 const LabelContext = createContext<LabelContextValue | null>(null);
@@ -33,6 +35,7 @@ export function LabelProvider({
   role = "member",
   userId = "",
   workflowStages,
+  sectorPosition = null,
   children,
 }: {
   sector: SectorKey;
@@ -40,6 +43,7 @@ export function LabelProvider({
   role?: OrgRole;
   userId?: string;
   workflowStages?: WorkflowStage[];
+  sectorPosition?: string | null;
   children: React.ReactNode;
 }) {
   const value = useMemo(() => {
@@ -54,8 +58,8 @@ export function LabelProvider({
       },
       workflowStages: stages.map((stage) => ({ ...stage })),
     };
-    return { labels: nextLabels, sector, role, userId, workflowStages: stages };
-  }, [sector, overrides, role, userId, workflowStages]);
+    return { labels: nextLabels, sector, role, userId, workflowStages: stages, sectorPosition };
+  }, [sector, overrides, role, userId, workflowStages, sectorPosition]);
 
   return <LabelContext.Provider value={value}>{children}</LabelContext.Provider>;
 }
@@ -106,4 +110,13 @@ export function useCurrentUserRole(): OrgRole {
     throw new Error("useCurrentUserRole() harus dipanggil di dalam <LabelProvider>");
   }
   return ctx.role;
+}
+
+/** Posisi sektoral user saat ini (mis. "Dokter", "Guru") — terpisah dari system role. */
+export function useSectorPosition(): string | null {
+  const ctx = useContext(LabelContext);
+  if (!ctx) {
+    throw new Error("useSectorPosition() harus dipanggil di dalam <LabelProvider>");
+  }
+  return ctx.sectorPosition;
 }

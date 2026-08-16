@@ -9,6 +9,7 @@ export interface OrgRow {
   sector_type: SectorKey;
   label_overrides: Record<string, string> | null;
   workflow_stages: unknown;
+  owner_sector_position?: string | null;
 }
 
 /**
@@ -38,32 +39,32 @@ export async function getCurrentOrg() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { supabase, user: null, org: null as OrgRow | null, role: "member" as OrgRole };
+    return { supabase, user: null, org: null as OrgRow | null, role: "member" as OrgRole, sectorPosition: null as string | null };
   }
 
   // 1. Owner
   const { data: ownedOrg } = await supabase
     .from("organizations")
-    .select("id, name, sector_type, label_overrides, workflow_stages")
+    .select("id, name, sector_type, label_overrides, workflow_stages, owner_sector_position")
     .eq("owner_id", user.id)
     .maybeSingle();
 
   if (ownedOrg) {
-    return { supabase, user, org: ownedOrg as OrgRow, role: "owner" as OrgRole };
+    return { supabase, user, org: ownedOrg as OrgRow, role: "owner" as OrgRole, sectorPosition: (ownedOrg as OrgRow).owner_sector_position ?? null };
   }
 
   // 2. Sudah jadi anggota organisasi lain
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("organization_id, role")
+    .select("organization_id, role, sector_position")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (membership) {
-    const m = membership as { organization_id: string; role: string };
+    const m = membership as { organization_id: string; role: string; sector_position: string | null };
     const { data: memberOrg } = await supabase
       .from("organizations")
-      .select("id, name, sector_type, label_overrides, workflow_stages")
+      .select("id, name, sector_type, label_overrides, workflow_stages, owner_sector_position")
       .eq("id", m.organization_id)
       .maybeSingle();
     if (memberOrg) {
@@ -72,6 +73,7 @@ export async function getCurrentOrg() {
         user,
         org: memberOrg as OrgRow,
         role: (m.role === "manager" ? "manager" : "member") as OrgRole,
+        sectorPosition: m.sector_position ?? null,
       };
     }
   }
@@ -81,19 +83,20 @@ export async function getCurrentOrg() {
   if (email) {
     const { data: invite } = await supabase
       .from("invitations")
-      .select("organization_id, role, invited_by")
+      .select("organization_id, role, invited_by, sector_position")
       .eq("email", email)
       .eq("accepted", false)
       .maybeSingle();
 
     if (invite) {
-      const inv = invite as { organization_id: string; role: string; invited_by: string | null };
+      const inv = invite as { organization_id: string; role: string; invited_by: string | null; sector_position: string | null };
 
       await supabase.from("organization_members").insert([
         {
           organization_id: inv.organization_id,
           user_id: user.id,
           role: inv.role,
+          sector_position: inv.sector_position,
           full_name:
             (user.user_metadata?.full_name as string | undefined) ?? email.split("@")[0],
         },
@@ -106,7 +109,7 @@ export async function getCurrentOrg() {
 
       const { data: joinedOrg } = await supabase
         .from("organizations")
-        .select("id, name, sector_type, label_overrides, workflow_stages")
+        .select("id, name, sector_type, label_overrides, workflow_stages, owner_sector_position")
         .eq("id", inv.organization_id)
         .maybeSingle();
 
@@ -132,10 +135,11 @@ export async function getCurrentOrg() {
           user,
           org: joinedOrg as OrgRow,
           role: (inv.role === "manager" ? "manager" : "member") as OrgRole,
+          sectorPosition: inv.sector_position ?? null,
         };
       }
     }
   }
 
-  return { supabase, user, org: null as OrgRow | null, role: "member" as OrgRole };
+  return { supabase, user, org: null as OrgRow | null, role: "member" as OrgRole, sectorPosition: null as string | null };
 }

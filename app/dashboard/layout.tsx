@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { normalizeWorkflowStages } from "@/lib/data/workflows";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, org, role } = await getCurrentOrg();
+  const { user, org, role, sectorPosition } = await getCurrentOrg();
 
   if (!user) {
     redirect("/login");
@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     "Pengguna";
 
   return (
-    <LabelProvider sector={org.sector_type} overrides={org.label_overrides} workflowStages={normalizeWorkflowStages(org.workflow_stages, org.sector_type)} role={role} userId={user.id}>
+    <LabelProvider sector={org.sector_type} overrides={org.label_overrides} workflowStages={normalizeWorkflowStages(org.workflow_stages, org.sector_type)} role={role} userId={user.id} sectorPosition={sectorPosition}>
       <div className="min-h-screen flex flex-col">
         <TopBar userName={displayName} organizationId={org.id} />
         <div className="flex flex-1">

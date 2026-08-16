@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLabels, useCanManage } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage, useSector } from "@/lib/labels/LabelProvider";
+import { SECTOR_LABELS } from "@/lib/labels/sectors";
 import { createClient } from "@/lib/supabase/client";
 import { logActivity, logSecurityAudit } from "@/lib/data/activity-log";
 
@@ -11,11 +12,13 @@ export interface MemberRow {
   id: string;
   full_name: string | null;
   role: "owner" | "manager" | "member";
+  sector_position?: string | null;
 }
 
 export interface InviteRow {
   email: string;
   role: "manager" | "member";
+  sector_position?: string | null;
 }
 
 export function TeamManager({
@@ -34,19 +37,32 @@ export function TeamManager({
   currentUserId: string;
 }) {
   const labels = useLabels();
+  const sector = useSector();
   const canManage = useCanManage();
   const router = useRouter();
   const supabase = createClient();
 
+  const sectorPositions = SECTOR_LABELS[sector].sectorPositions;
+
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"manager" | "member">("member");
+  const [sectorPosition, setSectorPosition] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ email: string; emailSent: boolean } | null>(null);
 
+  // System Role selalu ditampilkan dengan istilah GENERIK (Owner/Manager/
+  // Member) — BUKAN labels.ownerRole/managerRole/memberRole. Istilah
+  // sektoral itu untuk Sector Position (dropdown terpisah di bawah),
+  // supaya "Pasien"/"Dokter" tidak lagi muncul seolah-olah pilihan System
+  // Role saat mengundang anggota (lihat catatan QA terkait).
+  const SYSTEM_ROLE_LABEL: Record<"owner" | "manager" | "member", string> = {
+    owner: "Owner", manager: "Manager", member: "Member",
+  };
+
   const whatsappMessage = lastResult
-    ? `Halo, kamu diundang bergabung ke ${ownerName || "organisasi RANGKUL"} di RANGKUL sebagai ${
-        role === "manager" ? labels.managerRole : labels.memberRole
+    ? `Halo, kamu diundang bergabung ke ${ownerName || "organisasi RANGKUL"} di RANGKUL${
+        sectorPosition ? ` sebagai ${sectorPosition}` : ""
       }. Login dengan Google menggunakan email ${lastResult.email}: ${appOrigin}/login?email=${encodeURIComponent(
         lastResult.email
       )}`
@@ -66,7 +82,7 @@ export function TeamManager({
     const res = await fetch("/api/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: trimmed, role }),
+      body: JSON.stringify({ email: trimmed, role, sectorPosition: sectorPosition || null }),
     });
     const body = await res.json().catch(() => ({}));
 
@@ -92,7 +108,7 @@ export function TeamManager({
       targetType: "member",
       targetId: null,
       targetLabel: trimmed,
-      detail: `role ${role}`,
+      detail: `role ${role}${sectorPosition ? `, posisi ${sectorPosition}` : ""}`,
     });
     logSecurityAudit({
       organizationId,
@@ -102,20 +118,17 @@ export function TeamManager({
       targetType: "member",
       targetId: null,
       targetLabel: trimmed,
-      detail: `role ${role}`,
+      detail: `role ${role}${sectorPosition ? `, posisi ${sectorPosition}` : ""}`,
     });
     router.refresh();
   }
-
-  const roleLabel = (r: MemberRow["role"] | InviteRow["role"]) =>
-    r === "owner" ? labels.ownerRole : r === "manager" ? labels.managerRole : labels.memberRole;
 
   return (
     <main className="flex-1 p-6 md:p-8 min-w-0 max-w-2xl">
       <h1 className="text-2xl font-bold mb-1">Anggota Tim</h1>
       <p className="text-sm text-inkMuted mb-8">
         {canManage
-          ? `Undang ${labels.memberRole.toLowerCase()} atau ${labels.managerRole.toLowerCase()} lain untuk bergabung ke ${
+          ? `Undang anggota baru untuk bergabung ke ${
               ownerName ? `organisasi ${ownerName}` : "organisasi ini"
             }.`
           : `Daftar anggota di ${ownerName ? `organisasi ${ownerName}` : "organisasi ini"}.`}
@@ -125,22 +138,40 @@ export function TeamManager({
       {canManage && (
         <div className="bg-surface border border-border rounded-card p-5 mb-6">
           <h2 className="text-sm font-semibold mb-3">Undang Anggota Baru</h2>
-          <div className="flex gap-2 flex-wrap">
+          <div className="space-y-3">
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nama@email.com"
-              className="flex-1 min-w-[200px] border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
             />
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as "manager" | "member")}
-              className="border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
-            >
-              <option value="member">{labels.memberRole}</option>
-              <option value="manager">{labels.managerRole}</option>
-            </select>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-semibold text-inkMuted mb-1">Role Sistem</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as "manager" | "member")}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+                >
+                  <option value="member">Member</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-inkMuted mb-1">Posisi Sektor (opsional)</label>
+                <select
+                  value={sectorPosition}
+                  onChange={(e) => setSectorPosition(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+                >
+                  <option value="">Belum ditentukan</option>
+                  {sectorPositions.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <button
               onClick={handleInvite}
               disabled={!email.trim() || saving}
@@ -150,6 +181,9 @@ export function TeamManager({
               {saving ? "Mengundang…" : "Undang"}
             </button>
           </div>
+          <p className="text-[11px] text-inkMuted mt-2">
+            <strong>Role Sistem</strong> menentukan hak akses (Manager bisa kelola tim & pengaturan). <strong>Posisi Sektor</strong> murni jabatan/fungsi (mis. "{sectorPositions[0]}") — tidak memengaruhi izin akses.
+          </p>
           {error && <p className="text-xs text-[#8A3E24] mt-2">{error}</p>}
           {lastResult && (
             <>
@@ -212,11 +246,14 @@ export function TeamManager({
                   💬 Chat
                 </Link>
               )}
+              {m.sector_position && (
+                <span className="text-xs text-inkMuted">{m.sector_position} ·</span>
+              )}
               <span
                 className="text-xs font-semibold px-2.5 py-1 rounded-full"
                 style={{ backgroundColor: labels.accentSoft, color: labels.accent }}
               >
-                {roleLabel(m.role)}
+                {SYSTEM_ROLE_LABEL[m.role]}
               </span>
             </div>
           </div>
@@ -235,7 +272,10 @@ export function TeamManager({
               }`}
             >
               <span className="text-sm">{inv.email}</span>
-              <span className="text-xs text-inkMuted">{roleLabel(inv.role)} · belum bergabung</span>
+              <span className="text-xs text-inkMuted">
+                {inv.sector_position ? `${inv.sector_position} · ` : ""}
+                {SYSTEM_ROLE_LABEL[inv.role]} · belum bergabung
+              </span>
             </div>
           ))}
         </div>

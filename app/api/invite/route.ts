@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const email = (body?.email as string | undefined)?.trim().toLowerCase();
   const role = (body?.role as string | undefined) === "manager" ? "manager" : "member";
+  const sectorPosition = (body?.sectorPosition as string | undefined)?.trim() || null;
 
   if (!email || !email.includes("@")) {
     return NextResponse.json({ error: "Email tidak valid." }, { status: 400 });
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
   const { error: upsertError } = await supabase
     .from("invitations")
     .upsert(
-      { organization_id: org.id, email, role, accepted: false, invited_by: user.id },
+      { organization_id: org.id, email, role, sector_position: sectorPosition, accepted: false, invited_by: user.id },
       { onConflict: "organization_id,email" }
     );
 

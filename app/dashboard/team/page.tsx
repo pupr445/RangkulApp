@@ -6,7 +6,7 @@ import { TeamManager, MemberRow, InviteRow } from "@/components/TeamManager";
 export const runtime = "edge";
 
 export default async function TeamPage() {
-  const { supabase, user, org } = await getCurrentOrg();
+  const { supabase, user, org, role, sectorPosition } = await getCurrentOrg();
 
   if (!user || !org) {
     redirect("/login");
@@ -14,25 +14,35 @@ export default async function TeamPage() {
 
   const { data: membersData } = await supabase
     .from("organization_members")
-    .select("id:user_id, full_name, role")
+    .select("id:user_id, full_name, role, sector_position")
     .eq("organization_id", org.id);
 
   const { data: invitesData } = await supabase
     .from("invitations")
-    .select("email, role")
+    .select("email, role, sector_position")
     .eq("organization_id", org.id)
     .eq("accepted", false);
 
-  const members: MemberRow[] = [
-    // Owner selalu ditampilkan di urutan pertama meskipun tidak ada baris
-    // di organization_members (owner disimpan lewat organizations.owner_id).
-    {
-      id: user.id,
-      full_name: (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "Kamu",
-      role: "owner",
-    },
-    ...((membersData as MemberRow[] | null) ?? []),
-  ];
+  const memberRows = (membersData as MemberRow[] | null) ?? [];
+
+  // Owner tidak selalu punya baris di organization_members (disimpan
+  // lewat organizations.owner_id — lihat catatan di schema.sql). Entri
+  // sintetis untuk Owner HANYA ditambahkan kalau viewer halaman ini
+  // MEMANG owner-nya sendiri (role === "owner") — kalau ditambahkan
+  // tanpa syarat, manager/member yang membuka halaman ini akan melihat
+  // dirinya sendiri muncul DUA KALI dengan label "Owner" yang salah.
+  const members: MemberRow[] =
+    role === "owner" && !memberRows.some((m) => m.id === user.id)
+      ? [
+          {
+            id: user.id,
+            full_name: (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "Kamu",
+            role: "owner",
+            sector_position: sectorPosition,
+          },
+          ...memberRows,
+        ]
+      : memberRows;
 
   const pendingInvites = (invitesData as InviteRow[] | null) ?? [];
 

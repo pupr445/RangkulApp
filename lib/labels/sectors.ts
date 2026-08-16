@@ -29,10 +29,24 @@ export interface LabelSet {
   accent: string;
   accentSoft: string;
 
-  // Peran (roles)
+  // Peran (roles) — SEKADAR LABEL DESKRIPTIF untuk teks penjelasan (mis.
+  // "di sektor ini, Owner biasa disebut Dokter Kepala"). JANGAN dipakai
+  // sebagai pilihan dropdown saat mengundang anggota atau sebagai
+  // identitas yang ditampilkan di header — untuk itu pakai
+  // `sectorPositions` + kolom sector_position per user (lihat
+  // Temuan_QA_Role_Sector_Position_RANGKUL_Lengkap.docx).
   ownerRole: string; // pemilik/pemimpin tertinggi organisasi
   managerRole: string; // level pengelola tim/menengah
   memberRole: string; // anggota/pengguna akhir
+
+  // Sector Position — daftar preset JABATAN/FUNGSI sektoral yang bisa
+  // dipilih SIAPA PUN anggota (independen dari system role Owner/
+  // Manager/Member). Ini yang tampil di form undang anggota & badge
+  // identitas header — BUKAN ownerRole/managerRole/memberRole di atas.
+  // Sengaja tidak memuat entitas data sektor (mis. "Pasien" untuk
+  // Klinik, "Siswa" untuk Sekolah) — itu adalah data yang DIKELOLA
+  // organisasi, bukan posisi anggota internal.
+  sectorPositions: string[];
 
   // Entitas inti
   teamLabel: string; // "Kelas" / "Poli" / "Tim" / "Kepengurusan"
@@ -76,6 +90,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Kepala Sekolah",
     managerRole: "Guru",
     memberRole: "Murid",
+    sectorPositions: ["Kepala Sekolah", "Wakil Kepala Sekolah", "Guru", "Wali Kelas", "Staff Administrasi", "Lainnya"],
     teamLabel: "Kelas",
     teamLabelPlural: "Kelas Saya",
     projectLabel: "Mata Pelajaran",
@@ -107,6 +122,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Dokter Kepala",
     managerRole: "Dokter",
     memberRole: "Pasien",
+    sectorPositions: ["Dokter Kepala", "Dokter", "Perawat", "Bidan", "Apoteker", "Admin Klinik", "Petugas Administrasi", "Staff", "Lainnya"],
     teamLabel: "Poli",
     teamLabelPlural: "Poli Saya",
     projectLabel: "Program Layanan",
@@ -137,6 +153,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Owner",
     managerRole: "Manager",
     memberRole: "Karyawan",
+    sectorPositions: ["Pemilik Bisnis", "Manager", "Sales", "Finance", "HR", "Operasional", "Staff", "Lainnya"],
     teamLabel: "Tim",
     teamLabelPlural: "Tim Saya",
     projectLabel: "Proyek",
@@ -168,6 +185,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Ketua DKM",
     managerRole: "Pengurus",
     memberRole: "Jamaah",
+    sectorPositions: ["Ketua DKM", "Wakil Ketua", "Sekretaris", "Bendahara", "Pengurus", "Marbot", "Lainnya"],
     teamLabel: "Kepengurusan",
     teamLabelPlural: "Kepengurusan Saya",
     projectLabel: "Program Kegiatan",
@@ -198,6 +216,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Ketua",
     managerRole: "Koordinator",
     memberRole: "Anggota",
+    sectorPositions: ["Ketua", "Wakil Ketua", "Sekretaris", "Bendahara", "Koordinator Divisi", "Anggota Aktif", "Lainnya"],
     teamLabel: "Divisi",
     teamLabelPlural: "Divisi Saya",
     projectLabel: "Program Kerja",
@@ -228,6 +247,7 @@ export const SECTOR_LABELS: Record<SectorKey, LabelSet> = {
     ownerRole: "Pemilik",
     managerRole: "Pengelola",
     memberRole: "Anggota",
+    sectorPositions: ["Staff", "Koordinator", "Lainnya"],
     teamLabel: "Tim",
     teamLabelPlural: "Tim Saya",
     projectLabel: "Proyek",

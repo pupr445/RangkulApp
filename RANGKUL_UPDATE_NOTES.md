@@ -333,3 +333,23 @@ Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile
 - "Riwayat versi" — bisa dibuka per nama template, menampilkan versi-versi lama beserta tanggalnya, masing-masing tetap bisa diterapkan atau dihapus individual.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 16 — Pisahkan System Role, Sector Position, Sector Entity
+Menindaklanjuti laporan QA "Temuan_QA_Role_Sector_Position_RANGKUL_Lengkap.docx" — dikonfirmasi akurat 100% setelah diverifikasi ke source code. Label sektoral (mis. Klinik: "Dokter Kepala"/"Dokter"/"Pasien") sebelumnya dipakai LANGSUNG sebagai identitas header DAN pilihan dropdown undang anggota — mencampur System Role, Sector Position, dan Sector Entity jadi satu konsep.
+
+**Akar masalah:** `ownerRole`/`managerRole`/`memberRole` di `lib/labels/sectors.ts` awalnya didesain sebagai label deskriptif saja, tapi terpakai di dua tempat yang salah: `TopBar.tsx` (identitas user di header — SELALU menampilkan `ownerRole`, "Dokter Kepala", untuk SIAPA PUN yang login) dan `TeamManager.tsx` (dropdown undang anggota — literally menampilkan "Pasien" sebagai pilihan System Role).
+
+**Migration baru:** `025_sector_position.sql`
+- `organizations.owner_sector_position`, `organization_members.sector_position`, `invitations.sector_position` — kolom baru terpisah dari `role` (System Role: owner/manager/member, TIDAK diubah).
+
+**`lib/labels/sectors.ts`:** field baru `sectorPositions: string[]` per sektor — preset posisi sektoral yang REALISTIS (Klinik: Dokter Kepala/Dokter/Perawat/Bidan/Apoteker/Admin Klinik/dst — **tanpa Pasien**, karena itu data/entitas sektor bukan posisi anggota internal). `ownerRole`/`managerRole`/`memberRole` DIPERTAHANKAN tapi didokumentasikan ulang sebagai label deskriptif SAJA — tidak lagi dipakai untuk identitas atau dropdown.
+
+**`TopBar.tsx`:** identitas header sekarang menampilkan `{sectorPosition} · {SystemRole generik}` (mis. "Budi Santoso — Dokter Kepala · Owner"), bukan cuma `labels.ownerRole` untuk semua orang. System Role ditampilkan dengan istilah universal (Owner/Manager/Member), bukan istilah sektoral.
+
+**`TeamManager.tsx`:** form undang anggota sekarang punya DUA dropdown terpisah — "Role Sistem" (Owner/Manager/Member, menentukan hak akses) dan "Posisi Sektor" (opsional, dari preset `sectorPositions`, murni jabatan — tidak memengaruhi izin akses). Daftar Anggota Aktif & Menunggu Bergabung menampilkan keduanya terpisah.
+
+**Bug terkait yang ditemukan & ikut diperbaiki:** `app/dashboard/team/page.tsx` sebelumnya SELALU menambahkan viewer halaman sebagai "Owner" di posisi pertama daftar anggota, TANPA mengecek apakah viewer itu benar-benar owner — akibatnya manager/member yang membuka halaman ini akan melihat dirinya sendiri muncul DUA KALI, sekali dengan label "Owner" yang salah. Sekarang entri sintetis itu hanya ditambahkan kalau `role === "owner"` sungguhan.
+
+**Keterbatasan yang diketahui (belum diselesaikan penuh):** dengan perbaikan di atas, saat manager/member membuka halaman Anggota Tim, Owner organisasi TIDAK ikut muncul di daftar (karena Owner tidak selalu punya baris di `organization_members`, dan kita sengaja tidak mengubah pola arsitektur itu di wave ini untuk membatasi risiko). Perbaikan penuh untuk ini butuh keputusan arsitektur terpisah (mis. selalu membuat baris `organization_members` untuk Owner saat organisasi dibuat) — dicatat sebagai pekerjaan lanjutan, bukan dipaksakan sekarang.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
