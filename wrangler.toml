@@ -5,7 +5,9 @@ pages_build_output_dir = ".vercel/output/static"
 
 # Variabel PUBLIK (NEXT_PUBLIC_*) — sengaja ditaruh di sini, bukan rahasia,
 # karena nilainya memang ikut tertanam ke bundle JS yang dikirim ke browser.
-# GANTI nilai di bawah ini dengan URL & anon key project Supabase kamu.
+# Nilai di bawah SUDAH DIISI dengan URL & anon key project Supabase RANGKUL
+# yang sesungguhnya — tidak perlu diganti lagi di setiap update, KECUALI
+# kalau project Supabase-nya sendiri diganti/dipindah ke instance lain.
 #
 # JANGAN PERNAH taruh SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET, atau
 # RESEND_API_KEY di sini — file ini ikut ter-commit ke GitHub (publik!).

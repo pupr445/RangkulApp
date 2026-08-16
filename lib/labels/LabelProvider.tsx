@@ -98,3 +98,12 @@ export function useCurrentUserId(): string {
   }
   return ctx.userId;
 }
+
+/** Role user saat ini di organisasi — dipakai untuk Custom Field Permission (visible_to/editable_by). */
+export function useCurrentUserRole(): OrgRole {
+  const ctx = useContext(LabelContext);
+  if (!ctx) {
+    throw new Error("useCurrentUserRole() harus dipanggil di dalam <LabelProvider>");
+  }
+  return ctx.role;
+}

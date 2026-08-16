@@ -6,10 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/data/activity-log";
 import { validateCustomFieldValue } from "@/lib/data/custom-fields";
 import { notifyUser } from "@/lib/data/notifications";
-import { useLabels, useWorkflowStages } from "@/lib/labels/LabelProvider";
+import { useLabels, useWorkflowStages, useCurrentUserRole } from "@/lib/labels/LabelProvider";
 import { getInitialWorkflowStage, workflowStageColor } from "@/lib/data/workflows";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
+import { isFieldVisible, isFieldEditable, isFieldConditionMet } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
 import { TaskTemplate, addChecklistItem, fetchTaskTemplates, saveTaskTemplate } from "@/lib/data/task-engine";
 
@@ -32,6 +33,7 @@ export function NewTaskModal({
   defaultDueDate?: string;
 }) {
   const labels = useLabels();
+  const currentUserRole = useCurrentUserRole();
   const workflowStages = useWorkflowStages();
   const router = useRouter();
   const supabase = createClient();
@@ -118,7 +120,10 @@ export function NewTaskModal({
   async function handleSubmit() {
     if (!title.trim()) return;
 
-    const invalidField = customFields.map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "")).find(Boolean);
+    const invalidField = customFields
+      .filter((f) => isFieldVisible(f, currentUserRole))
+      .map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "", customValues))
+      .find(Boolean);
     if (invalidField) { setError(invalidField); return; }
 
     setSaving(true);
@@ -319,7 +324,11 @@ export function NewTaskModal({
               <p className="text-[11px] uppercase tracking-wide font-semibold text-inkMuted">
                 Field Tambahan
               </p>
-              {customFields.map((f) => (
+              {customFields
+                .filter((f) => isFieldVisible(f, currentUserRole) && isFieldConditionMet(f, customValues))
+                .map((f) => {
+                  const editable = isFieldEditable(f, currentUserRole);
+                  return (
                 <div key={f.id}>
                   <label className="block text-xs font-semibold mb-1.5">
                     {f.field_label}
@@ -328,10 +337,11 @@ export function NewTaskModal({
                   {f.field_type === "select" ? (
                     <select
                       value={customValues[f.field_key] ?? ""}
+                      disabled={!editable}
                       onChange={(e) =>
                         setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
                       }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface disabled:opacity-50"
                     >
                       <option value="">Pilih...</option>
                       {(f.field_options ?? []).map((opt) => (
@@ -344,14 +354,16 @@ export function NewTaskModal({
                     <input
                       type={f.field_type === "number" ? "number" : f.field_type === "date" ? "date" : "text"}
                       value={customValues[f.field_key] ?? ""}
+                      disabled={!editable}
                       onChange={(e) =>
                         setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
                       }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink disabled:opacity-50"
                     />
                   )}
                 </div>
-              ))}
+                  );
+                })}
             </div>
           )}
 

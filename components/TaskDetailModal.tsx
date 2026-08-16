@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useLabels, useCanManage, useCurrentUserId, useWorkflowStages } from "@/lib/labels/LabelProvider";
+import { useLabels, useCanManage, useCurrentUserId, useCurrentUserRole, useWorkflowStages } from "@/lib/labels/LabelProvider";
 import { MemberOption } from "@/lib/data/members";
 import { CustomFieldDef } from "@/lib/data/custom-fields";
 import { TeamOption } from "@/lib/data/teams";
@@ -13,6 +13,7 @@ import { notifyUser } from "@/lib/data/notifications";
 import { canTransitionWorkflow, workflowStageColor } from "@/lib/data/workflows";
 import { fetchWatchers } from "@/lib/data/task-engine";
 import { TaskChecklist, TaskDependencies, TaskWatchToggle } from "@/components/TaskEngineWidgets";
+import { isFieldVisible, isFieldEditable, isFieldConditionMet } from "@/lib/data/custom-fields";
 
 export interface EditableTask {
   id: string;
@@ -46,6 +47,7 @@ export function TaskDetailModal({
   const labels = useLabels();
   const workflowStages = useWorkflowStages();
   const canManage = useCanManage();
+  const currentUserRole = useCurrentUserRole();
   const currentUserId = useCurrentUserId();
   const router = useRouter();
   const supabase = createClient();
@@ -86,7 +88,10 @@ export function TaskDetailModal({
   async function handleSave() {
     if (!title.trim() || !task) return;
 
-    const invalidField = customFields.map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "")).find(Boolean);
+    const invalidField = customFields
+      .filter((f) => isFieldVisible(f, currentUserRole))
+      .map((f) => validateCustomFieldValue(f, customValues[f.field_key] ?? "", customValues))
+      .find(Boolean);
     if (invalidField) { setError(invalidField); return; }
 
     setSaving(true);
@@ -376,7 +381,11 @@ export function TaskDetailModal({
               <p className="text-[11px] uppercase tracking-wide font-semibold text-inkMuted">
                 Field Tambahan
               </p>
-              {customFields.map((f) => (
+              {customFields
+                .filter((f) => isFieldVisible(f, currentUserRole) && isFieldConditionMet(f, customValues))
+                .map((f) => {
+                  const editable = isFieldEditable(f, currentUserRole);
+                  return (
                 <div key={f.id}>
                   <label className="block text-xs font-semibold mb-1.5">
                     {f.field_label}
@@ -385,10 +394,11 @@ export function TaskDetailModal({
                   {f.field_type === "select" ? (
                     <select
                       value={customValues[f.field_key] ?? ""}
+                      disabled={!editable}
                       onChange={(e) =>
                         setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
                       }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink bg-surface disabled:opacity-50"
                     >
                       <option value="">Pilih...</option>
                       {(f.field_options ?? []).map((opt) => (
@@ -401,14 +411,16 @@ export function TaskDetailModal({
                     <input
                       type={f.field_type === "number" ? "number" : f.field_type === "date" ? "date" : "text"}
                       value={customValues[f.field_key] ?? ""}
+                      disabled={!editable}
                       onChange={(e) =>
                         setCustomValues((prev) => ({ ...prev, [f.field_key]: e.target.value }))
                       }
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-ink disabled:opacity-50"
                     />
                   )}
                 </div>
-              ))}
+                  );
+                })}
             </div>
           )}
 

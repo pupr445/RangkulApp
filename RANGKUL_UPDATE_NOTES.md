@@ -312,3 +312,24 @@ Melengkapi Chat: Thread/Reply, Pin Message, Message Permission. Mention & Read R
 **Sengaja belum dikerjakan (di luar scope wave ini):** file attachment di chat, message search. Keduanya butuh desain terpisah (attachment: storage + preview; search: full-text search index), akan dikerjakan sebagai wave sendiri supaya tidak dikompromikan kualitasnya.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 15 — Custom Field & Template Maturity (Fase 9 & 10 Roadmap)
+
+**Migration baru:** `024_custom_field_template_maturity.sql`
+- `custom_fields.depends_on_field_key` + `depends_on_value` — Conditional Field: field hanya tampil/wajib kalau field lain bernilai tertentu.
+- `custom_fields.visible_to` + `editable_by` (array role) — Field Permission: siapa boleh lihat/isi field ini. Default semua role, jadi field lama tidak tiba-tiba hilang dari siapa pun.
+- `organization_templates.version` — Template Versioning: nama yang sama dipakai lagi jadi versi baru, bukan menimpa. Histori lama tetap tersimpan & bisa diterapkan lagi.
+- **Perbaikan celah RLS**: `org_templates_all` yang lama mengizinkan SEMUA anggota (termasuk member biasa) membuat/mengubah/menghapus template — padahal ini mengubah struktur workflow & field ORG-WIDE begitu diterapkan. Diperketat jadi manager-only untuk insert/update/delete (select tetap terbuka untuk semua member). Tidak berdampak ke UI yang sudah ada karena halaman Settings memang sudah mengalihkan member biasa sebelum sempat melihat komponen ini — jadi ini murni menutup celah di level API/database, bukan mengubah perilaku yang terlihat.
+
+**Custom Field UI (`CustomFieldsManager.tsx`):**
+- Bagian baru "Field bersyarat" — pilih field acuan + nilai syaratnya.
+- Bagian baru "Siapa boleh lihat & isi" — checkbox per role (Owner/Manager/Member), dengan validasi otomatis: role yang tidak boleh lihat otomatis tidak boleh isi.
+- Badge "Bersyarat" dan "Terbatas: ..." muncul di daftar field kalau relevan.
+
+**Task modal (`NewTaskModal.tsx`, `TaskDetailModal.tsx`):** field yang tidak `visible_to` role user sekarang otomatis disembunyikan; field yang kondisinya belum terpenuhi juga disembunyikan; field yang tidak `editable_by` role user tetap terlihat tapi disabled (transparan, bukan hilang begitu saja — supaya user tahu field itu ada tapi bukan wewenangnya). Validasi wajib-isi otomatis mengabaikan field yang sedang disembunyikan.
+
+**Template UI (`TemplateManager.tsx`):**
+- Tombol "Duplikat" — isi ulang form dengan nama "{nama} (salinan)" dari template yang dipilih, siap diedit sebelum disimpan.
+- "Riwayat versi" — bisa dibuka per nama template, menampilkan versi-versi lama beserta tanggalnya, masing-masing tetap bisa diterapkan atau dihapus individual.
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
