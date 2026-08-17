@@ -15,7 +15,8 @@ export type ActivityAction =
   | "workflow.updated"
   | "template.created"
   | "template.applied"
-  | "document.uploaded";
+  | "document.uploaded"
+  | "document.new_version";
 
 export interface ActivityLogEntry {
   id: string;
@@ -132,6 +133,7 @@ const ACTION_VERB: Record<string, string> = {
   "template.created": "membuat template",
   "template.applied": "menerapkan template",
   "document.uploaded": "mengunggah dokumen",
+  "document.new_version": "mengunggah versi baru dokumen",
 };
 
 const TARGET_NOUN: Record<string, string> = {

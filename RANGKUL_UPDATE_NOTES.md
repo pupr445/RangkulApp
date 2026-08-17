@@ -353,3 +353,24 @@ Menindaklanjuti laporan QA "Temuan_QA_Role_Sector_Position_RANGKUL_Lengkap.docx"
 **Keterbatasan yang diketahui (belum diselesaikan penuh):** dengan perbaikan di atas, saat manager/member membuka halaman Anggota Tim, Owner organisasi TIDAK ikut muncul di daftar (karena Owner tidak selalu punya baris di `organization_members`, dan kita sengaja tidak mengubah pola arsitektur itu di wave ini untuk membatasi risiko). Perbaikan penuh untuk ini butuh keputusan arsitektur terpisah (mis. selalu membuat baris `organization_members` untuk Owner saat organisasi dibuat) — dicatat sebagai pekerjaan lanjutan, bukan dipaksakan sekarang.
 
 Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
+
+## Wave 17 — File & Document Maturity (Fase 13 Roadmap)
+Sebelumnya file HANYA disimpan di Supabase Storage tanpa metadata sama sekali (daftar file didapat langsung dari storage.list()) — tidak ada folder, versi, atau kontrol siapa boleh hapus (siapa pun anggota organisasi bisa hapus file siapa saja).
+
+**Migration baru:** `026_document_folder_version_permission.sql`
+- Tabel baru `document_folders` — folder bersarang (subfolder di dalam subfolder), RLS: semua member bisa lihat & buat, hapus hanya pembuatnya atau Owner/Manager.
+- Tabel baru `documents` — lapisan metadata DI ATAS Storage yang sudah ada (bukan mengganti), menyimpan `folder_id`, `file_name`, `root_document_id` + `version` untuk versioning.
+- **Perbaikan celah keamanan**: policy `documents_delete` pada `storage.objects` sebelumnya cuma cek `is_org_member` (SIAPA PUN anggota bisa hapus file siapa saja) — diperketat jadi pengunggah aslinya sendiri, atau Owner/Manager untuk moderasi.
+
+**Versioning:** desainnya reuse pola yang sama dengan Template Versioning (Wave 15) — `root_document_id` menandai "keluarga" file, `version` bertambah tiap kali diganti, versi lama tetap tersimpan utuh (bukan ditimpa). "Hapus" menghapus seluruh keluarga versi sekaligus (tidak menyisakan storage object yatim yang tidak bisa diakses).
+
+**Pencarian:** filter nama file lintas SEMUA folder dalam organisasi (bukan cuma folder aktif) — cukup untuk skala dokumen organisasi, sengaja tidak membangun infrastruktur full-text search terpisah yang berlebihan untuk kasus ini.
+
+**UI (`DocsManager.tsx`, ditulis ulang total):**
+- Navigasi folder dengan breadcrumb, tombol "+ Folder" untuk subfolder baru.
+- Kolom pencarian di atas — lintas folder, hasil menampilkan nama file yang cocok.
+- Tombol "Versi baru" per file — mengunggah revisi tanpa kehilangan versi lama.
+- Tombol "Riwayat" — modal daftar semua versi dengan tanggal & ukuran, masing-masing bisa diunduh langsung.
+- Tombol "Hapus" per file/folder mengikuti RLS yang baru (transparan sesuai izin, bukan disembunyikan tapi tetap bisa lewat API).
+
+Diverifikasi: `npm run typecheck` lolos bersih, `npm run build` berhasil compile.
